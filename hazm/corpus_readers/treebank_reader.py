@@ -9,10 +9,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Tuple
 from xml.dom import minidom
 from xml.dom.minidom import Node
 
@@ -21,7 +18,7 @@ from nltk.tree import Tree
 from hazm import WordTokenizer
 
 
-def coarse_pos_e(tags: List[str]) -> List[str]:
+def coarse_pos_e(tags: list[str]) -> list[str]:
     """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
 
     Examples:
@@ -167,7 +164,7 @@ class TreebankReader:
                     pos.append(w.getAttribute("kind"))
                 return pos
 
-            def clitic_join(tree: Tree, clitic: Dict):
+            def clitic_join(tree: Tree, clitic: dict):
                 if type(tree[-1]) == Tree:
                     return clitic_join(tree[-1], clitic)
 
@@ -255,7 +252,7 @@ class TreebankReader:
                 traverse(s)
                 yield traverse(s)
 
-    def sents(self: "TreebankReader") -> Iterator[List[Tuple[str, str]]]:
+    def sents(self: "TreebankReader") -> Iterator[list[tuple[str, str]]]:
         """جملات را به شکل مجموعه‌ای از `(توکن،برچسب)`ها برمی‌گرداند.
 
         Examples:

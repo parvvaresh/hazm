@@ -5,7 +5,6 @@
 """
 from pathlib import Path
 from typing import Iterator
-from typing import Tuple
 
 
 class MizanReader:
@@ -51,7 +50,7 @@ class MizanReader:
             for line in file:
                     yield line.strip()
 
-    def english_persian_sentences(self: "MizanReader") -> Iterator[Tuple[str, str]]:
+    def english_persian_sentences(self: "MizanReader") -> Iterator[tuple[str, str]]:
         """جملات انگلیسی و فارسی را کنار هم در قالب یک زوج `(جملهٔ انگلیسی، جملهٔ فارسی)` یک‌به‌یک برمی‌گرداند.
 
         Examples:

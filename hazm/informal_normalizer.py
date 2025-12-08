@@ -3,7 +3,6 @@
 
 import re
 from pathlib import Path
-from typing import List
 
 from hazm import NUMBERS
 from hazm import Lemmatizer
@@ -141,7 +140,7 @@ class InformalNormalizer(Normalizer):
                 return " ".join(c)
         return token
 
-    def normalized_word(self: "InformalNormalizer", word: str) -> List[str]:
+    def normalized_word(self: "InformalNormalizer", word: str) -> list[str]:
         """اشکال مختلف نرمالایزشدهٔ کلمه را برمی‌گرداند.
 
         Examples:
@@ -743,7 +742,7 @@ class InformalNormalizer(Normalizer):
 
         return possible_words
 
-    def normalize(self: "InformalNormalizer", text: str) -> List[List[List[str]]]:
+    def normalize(self: "InformalNormalizer", text: str) -> list[list[list[str]]]:
         """متن محاوره‌ای را به متن فارسی معیار تبدیل می‌کند.
 
         Examples:
@@ -769,7 +768,7 @@ class InformalNormalizer(Normalizer):
 
         return [[self.normalized_word(word) for word in sent] for sent in sents]
 
-    def informal_conjugations(self: "InformalNormalizer", verb: str) -> List[str]:
+    def informal_conjugations(self: "InformalNormalizer", verb: str) -> list[str]:
         """صورت‌های صرفی فعل را در شکل محاوره‌ای تولید می‌کند.
 
         Args:

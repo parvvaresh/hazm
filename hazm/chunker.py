@@ -1,12 +1,7 @@
 # ruff: noqa: EXE002
 """این ماژول شامل کلاس‌ها و توابعی برای تجزیهٔ متن به عبارات اسمی، فعلی و حرف است."""
 
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
 
 from nltk.chunk import RegexpParser
 from nltk.chunk import conlltags2tree
@@ -66,8 +61,8 @@ class Chunker(IOBTagger):
 
     def __init__(
         self: "Chunker",
-        model: Optional[str] = None,
-        data_maker: Optional[List[List[Dict]]] = None,
+        model: str | None = None,
+        data_maker: list[list[dict]] | None = None,
     ) -> None:
         """constructor."""
         data_maker = self.data_maker if data_maker is None else data_maker
@@ -76,8 +71,8 @@ class Chunker(IOBTagger):
 
     def data_maker(
         self: "Chunker",
-        tokens: List[List[Tuple[str, str]]],
-    ) -> List[List[Dict]]:
+        tokens: list[list[tuple[str, str]]],
+    ) -> list[list[dict]]:
         """تابعی که لیستی دو بعدی از کلمات به همراه لیبل را گرفته و لیست دو بعدی از از دیکشنری‌هایی که تعیین‌کننده ویژگی‌ها هر کلمه هستند را برمی‌گرداند.
 
         Examples:
@@ -104,10 +99,10 @@ class Chunker(IOBTagger):
 
     def features(
         self: "Chunker",
-        words: List[str],
-        pos_tags: List[str],
+        words: list[str],
+        pos_tags: list[str],
         index: int,
-    ) -> Dict[str, Union[str, bool]]:
+    ) -> dict[str, str | bool]:
         """ویژگی‌های کلمه را برمی‌گرداند."""
         word_features = self.posTagger.features(words, index)
         word_features.update(
@@ -121,7 +116,7 @@ class Chunker(IOBTagger):
 
     def train(
         self: "Chunker",
-        trees: List[str],
+        trees: list[str],
         c1: float = 0.4,
         c2: float = 0.04,
         max_iteration: int = 400,
@@ -151,7 +146,7 @@ class Chunker(IOBTagger):
             report_duration,
         )
 
-    def parse(self: "Chunker", sentence: List[Tuple[str, str]]) -> str:
+    def parse(self: "Chunker", sentence: list[tuple[str, str]]) -> str:
         """جمله‌ای را در قالب لیستی از تاپل‌های دوتایی [(توکن, نوع), (توکن, نوع), ...]
         دریافت می‌کند و درخت تقطع‌شدهٔ آن را بر می‌گرداند.
 
@@ -178,7 +173,7 @@ class Chunker(IOBTagger):
 
     def parse_sents(
         self: "Chunker",
-        sentences: List[List[Tuple[str, str]]],
+        sentences: list[list[tuple[str, str]]],
     ) -> Iterator[str]:
         """جملات ورودی را به‌شکل تقطیع‌شده و در قالب یک برمی‌گرداند.
 
@@ -192,7 +187,7 @@ class Chunker(IOBTagger):
         for conlltagged in super().tag_sents(sentences):
             yield conlltags2tree(conlltagged)
 
-    def evaluate(self: "Chunker", trees: List[str]) -> float:
+    def evaluate(self: "Chunker", trees: list[str]) -> float:
         """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
 
         Examples:
@@ -336,7 +331,7 @@ class SpacyChunker(Chunker):
         This function loads a pre-trained spaCy model and configures it for a specific dataset type ('train', 'dev', or 'test').
 
         Args:
-        - sents : List[List[str]] contain each sentence tokens in a separate list.All lists are in one major list
+        - sents : list[list[str]] contain each sentence tokens in a separate list.All lists are in one major list
 
         The model setup process is essential for training and evaluation on the chosen dataset type.
         """
@@ -503,7 +498,7 @@ class SpacyChunker(Chunker):
 
     def _label_yielder(self: "SpacyChunker",sents):
         """
-        sents: List(List(Tuple(str,str,str)))
+        sents: list(list(tuple(str,str,str)))
         Yield gold and predicted trees for evaluation.
 
         This function prepares gold and predicted trees for evaluation by parsing the test data.
@@ -519,7 +514,7 @@ class SpacyChunker(Chunker):
         golds_tree = list(self._make_tree_generator(golds))
         return preds_tree, golds_tree
     
-    def parse(self: "SpacyChunker", sentence: List[Tuple[str, str]]) -> str:
+    def parse(self: "SpacyChunker", sentence: list[tuple[str, str]]) -> str:
         """جمله‌ای را در قالب لیستی از تاپل‌های دوتایی [(توکن, نوع), (توکن, نوع), ...]
         دریافت می‌کند و درخت تقطع‌شدهٔ آن را بر می‌گرداند.
 
@@ -556,7 +551,7 @@ class SpacyChunker(Chunker):
 
 
 
-    def parse_sents(self: "SpacyChunker", sentences: List[List[Tuple[str, str]]],batch_size=128) -> Iterator[str]:
+    def parse_sents(self: "SpacyChunker", sentences: list[list[tuple[str, str]]],batch_size=128) -> Iterator[str]:
         """
         Parse multiple sentences and extract predictions.
 

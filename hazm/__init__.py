@@ -1,7 +1,6 @@
 # ruff: noqa
 """entry point for the package."""
 
-from typing import List
 
 from hazm.utils import default_verbs
 from hazm.utils import default_words
@@ -34,14 +33,14 @@ from hazm.chunker import tree2brackets
 
 from hazm.sentence_tokenizer import SentenceTokenizer
 
-def sent_tokenize(text: str) -> List[str]:
+def sent_tokenize(text: str) -> list[str]:
     """Sentence Tokenizer."""
     if not hasattr(sent_tokenize, "tokenizer"):
         sent_tokenize.tokenizer = SentenceTokenizer()
     return sent_tokenize.tokenizer.tokenize(text)
 
 
-def word_tokenize(sentence: str) -> List[str]:
+def word_tokenize(sentence: str) -> list[str]:
     """Word Tokenizer."""
     if not hasattr(word_tokenize, "tokenizer"):
         word_tokenize.tokenizer = WordTokenizer()

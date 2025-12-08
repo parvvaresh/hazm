@@ -1,5 +1,4 @@
 import subprocess
-from typing import Tuple , List
 from tqdm import tqdm
 
 

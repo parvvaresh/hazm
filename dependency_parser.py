@@ -14,7 +14,6 @@ from nltk.parse.api import ParserI
 from nltk.parse.malt import MaltParser as NLTKMaltParser
 
 from tqdm import tqdm
-from typing import List, Tuple
 import os
 
 class MaltParser(NLTKMaltParser):
@@ -59,7 +58,7 @@ class MaltParser(NLTKMaltParser):
 
     def parse_tagged_sents(
         self: "MaltParser",
-        sentences: List[List[Tuple[str, str]]],
+        sentences: list[list[tuple[str, str]]],
         verbose: bool = False,
     ) -> str:
         """گراف وابستگی‌ها را برای جملات ورودی برمی‌گرداند.
@@ -165,7 +164,7 @@ class TurboParser(ParserI):
 
     def parse_sents(
         self: "TurboParser",
-        sentences: List[List[Tuple[str, str]]],
+        sentences: list[list[tuple[str, str]]],
     ) -> Type[DependencyGraph]:
         """parse_sents."""
         tagged_sentences = self.tagger.tag_sents(sentences)
@@ -173,7 +172,7 @@ class TurboParser(ParserI):
 
     def tagged_parse_sents(
         self: "TurboParser",
-        sentences: List[List[Tuple[str, str]]],
+        sentences: list[list[tuple[str, str]]],
     ) -> Type[DependencyGraph]:
         """tagged_parse_sents."""
         input_file = tempfile.NamedTemporaryFile(
@@ -256,8 +255,7 @@ class SpacyDependencyParser(MaltParser):
         import spacy
         from spacy.tokens import Doc
         from tqdm import tqdm
-        from typing import List, Tuple
-
+        
 
         """
         Initialize the SpacyDependencyParser object.
@@ -343,7 +341,7 @@ class SpacyDependencyParser(MaltParser):
             )
         return "\n".join(conll_lines)
 
-    def parse_tagged_sents(self: "SpacyDependencyParser", sentences: List[List[Tuple[str, str]]], verbose: bool = False) -> str:
+    def parse_tagged_sents(self: "SpacyDependencyParser", sentences: list[list[tuple[str, str]]], verbose: bool = False) -> str:
         """
         Parse a list of tagged sentences and return the dependency graphs.
 

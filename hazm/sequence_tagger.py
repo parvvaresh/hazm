@@ -1,8 +1,6 @@
 """این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
 
 import time
-from typing import List
-from typing import Tuple
 
 import numpy as np
 from pycrfsuite import Tagger
@@ -123,10 +121,10 @@ class SequenceTagger:
             [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
 
         Args:
-            tokens (List[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
+            tokens (list[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[Tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
+            (list[tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
 
         """
         if self.model is None:
@@ -147,10 +145,10 @@ class SequenceTagger:
             [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
 
         Args:
-            sentences (List[List[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
+            sentences (list[list[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[List[Tuple[str,str]]]): لیستی از لیستی از `(توکن، برچسب)`ها.
+            (list[list[tuple[str,str]]]): لیستی از لیستی از `(توکن، برچسب)`ها.
                     هر لیست از `(توکن،برچسب)`ها مربوط به یک جمله است.
 
         """
@@ -192,7 +190,7 @@ class SequenceTagger:
             training time: 0.01 sec
 
         Args:
-            tagged_list (List[{List[Tuple[str,str]]]): جملاتی که مدل از روی آن‌ها آموزش می‌بیند.
+            tagged_list (list[{list[tuple[str,str]]]): جملاتی که مدل از روی آن‌ها آموزش می‌بیند.
             c1 (float): مقدار L1 regularization.
             c2 (float): مقدار L2 regularization.
             max_iteration (int): تعداد تکرار آموزش بر کل دیتا.
@@ -235,7 +233,7 @@ class SequenceTagger:
         self.model.dump(filename)
 
     def evaluate(
-        self: "SequenceTagger", tagged_sent: List[List[Tuple[str, str]]],
+        self: "SequenceTagger", tagged_sent: list[list[tuple[str, str]]],
     ) -> float:
         """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
 
@@ -289,10 +287,10 @@ class IOBTagger(SequenceTagger):
             [('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN,EZ', 'B-NP'), ('ایران', 'NOUN', 'I-NP'), ('رفته_بودم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]
 
         Args:
-            tagged_data (List[Tuple[str, str]]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
+            tagged_data (list[tuple[str, str]]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[Tuple[str, str, str]]): ‌لیستی از `(توکن، تگ، برچسب)`ها.
+            (list[tuple[str, str, str]]): ‌لیستی از `(توکن، تگ، برچسب)`ها.
 
         """
         chunk_tags = super().tag(tagged_data)
@@ -310,10 +308,10 @@ class IOBTagger(SequenceTagger):
             [[('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN,EZ', 'B-NP'), ('ایران', 'NOUN', 'I-NP'), ('رفته_بودم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]]
 
         Args:
-            sentences (List[List[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
+            sentences (list[list[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[List[Tuple[str,str]]]): لیستی از لیستی از `(توکن، تگ، برچسب)`ها.
+            (list[list[tuple[str,str]]]): لیستی از لیستی از `(توکن، تگ، برچسب)`ها.
                     هر لیست از `(توکن، تگ، برچسب)`ها مربوط به یک جمله است.
 
         """
@@ -325,7 +323,7 @@ class IOBTagger(SequenceTagger):
 
     def train(
         self: "SequenceTagger",
-        tagged_list: List[List[Tuple[str, str, str]]],
+        tagged_list: list[list[tuple[str, str, str]]],
         c1: float = 0.4,
         c2: float = 0.04,
         max_iteration: int = 400,
@@ -379,7 +377,7 @@ class IOBTagger(SequenceTagger):
         )
 
     def evaluate(
-        self: "SequenceTagger", tagged_sent: List[List[Tuple[str, str, str]]],
+        self: "SequenceTagger", tagged_sent: list[list[tuple[str, str, str]]],
     ) -> float:
         """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
 

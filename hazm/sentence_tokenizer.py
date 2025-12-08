@@ -6,7 +6,6 @@
 
 
 import re
-from typing import List
 
 from nltk.tokenize.api import TokenizerI
 
@@ -17,7 +16,7 @@ class SentenceTokenizer(TokenizerI):
     def __init__(self: "SentenceTokenizer") -> None:
         self.pattern = re.compile(r"([!.?⸮؟]+)[ \n]+")
 
-    def tokenize(self: "SentenceTokenizer", text: str) -> List[str]:
+    def tokenize(self: "SentenceTokenizer", text: str) -> list[str]:
         """متن ورودی را به جملات سازندهٔ آن می‌شِکند.
 
         Examples:

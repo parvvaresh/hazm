@@ -12,7 +12,6 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict
 from typing import Iterator
 
 
@@ -30,7 +29,7 @@ class WikipediaReader:
         self.wiki_extractor = Path(__file__).parent / "wiki_extractor.py"
         self.n_jobs = n_jobs
 
-    def docs(self: "WikipediaReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "WikipediaReader") -> Iterator[dict[str, str]]:
         """مقالات را برمی‌گرداند.
 
         هر مقاله، شی‌ای متشکل از چند پارامتر است:

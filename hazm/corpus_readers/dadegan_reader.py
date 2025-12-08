@@ -5,17 +5,14 @@ PerDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده
 """
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Tuple
 from typing import Type
 
 from nltk.parse import DependencyGraph
 from nltk.tree import Tree
 
 
-def coarse_pos_u(tags: List[str], word: str) -> str:
+def coarse_pos_u(tags: list[str], word: str) -> str:
     """برچسب‌های ریز را به برچسب‌های درشت منطبق با استاندارد جهانی (coarse-grained
     universal pos tags) تبدیل می‌کند.
 
@@ -51,7 +48,7 @@ def coarse_pos_u(tags: List[str], word: str) -> str:
     return pos_mapped
 
 
-def coarse_pos_e(tags: List[str], word) -> str: # noqa: ARG001
+def coarse_pos_e(tags: list[str], word) -> str: # noqa: ARG001
     """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
 
     Examples:
@@ -76,12 +73,12 @@ def coarse_pos_e(tags: List[str], word) -> str: # noqa: ARG001
     return mapping.get(tags[0], "X") + ("e" if "EZ" in tags else "")
 
 
-def word_nodes(tree: Type[Tree]) -> List[Dict[str, Any]]:
+def word_nodes(tree: Type[Tree]) -> list[dict[str, Any]]:
     """نودها را به صورت مرتب‌شده برمی‌گرداند."""
     return sorted(tree.nodes.values(), key=lambda node: node["address"])[1:]
 
 
-def node_deps(node: List[Dict[str, Any]]) -> List[Any]:
+def node_deps(node: list[dict[str, Any]]) -> list[Any]:
     """مقادیر موجود در فیلد deps نود ورودی را برمی‌گرداند."""
     return sum(list(node["deps"].values()), [])
 
@@ -154,7 +151,7 @@ class DadeganReader:
 
             yield tree
 
-    def sents(self: "DadeganReader") -> Iterator[List[Tuple[str, str]]]:
+    def sents(self: "DadeganReader") -> Iterator[list[tuple[str, str]]]:
         """لیستی از جملات را برمی‌گرداند.
 
         هر جمله لیستی از `(توکن، برچسب)`ها است.

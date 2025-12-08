@@ -2,7 +2,6 @@
 
 
 import re
-from typing import List
 
 from hazm import Lemmatizer
 from hazm import WordTokenizer
@@ -478,7 +477,7 @@ class Normalizer:
     
         return text
 
-    def token_spacing(self: "Normalizer", tokens: List[str]) -> List[str]:
+    def token_spacing(self: "Normalizer", tokens: list[str]) -> list[str]:
         """توکن‌های ورودی را به فهرستی از توکن‌های نرمال‌سازی شده تبدیل می‌کند.
         در این فرایند ممکن است برخی از توکن‌ها به یکدیگر بچسبند؛
         برای مثال: `['زمین', 'لرزه', 'ای']` تبدیل می‌شود به: `['زمین‌لرزه‌ای']`.

@@ -5,9 +5,6 @@ import warnings
 from pathlib import Path
 from typing import Any
 from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import Type
 
 import fasttext as fstxt
@@ -40,7 +37,7 @@ class WordEmbedding:
     def __init__(
         self: "WordEmbedding",
         model_type: str,
-        model_path: Optional[str] = None,
+        model_path: str | None = None,
     ) -> None:
         if model_type not in supported_embeddings:
             msg = (
@@ -164,7 +161,7 @@ class WordEmbedding:
             raise AttributeError(msg)
         return self.model[word]
 
-    def doesnt_match(self: "WordEmbedding", words: List[str]) -> str:
+    def doesnt_match(self: "WordEmbedding", words: list[str]) -> str:
         """لیستی از کلمات را دریافت می‌کند و کلمهٔ نامرتبط را برمی‌گرداند.
 
         Examples:
@@ -216,7 +213,7 @@ class WordEmbedding:
         self: "WordEmbedding",
         word: str,
         topn: int = 5,
-    ) -> List[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """کلمات مرتبط با یک واژه را به همراه میزان ارتباط آن برمی‌گرداند.
 
         Examples:
@@ -262,7 +259,7 @@ class WordEmbedding:
 
         return self.model.get_vector(word=word, norm=True)
 
-    def get_vocabs(self: "WordEmbedding") -> List[str]:
+    def get_vocabs(self: "WordEmbedding") -> list[str]:
         """لیستی از کلمات موجود در فایل امبدینگ را برمی‌گرداند.
 
         Examples:
@@ -362,7 +359,7 @@ class SentEmbedding:
 
     """
 
-    def __init__(self: "SentEmbedding", model_path: Optional[str] = None) -> None:
+    def __init__(self: "SentEmbedding", model_path: str | None = None) -> None:
         if model_path:
             self.load_model(model_path)
             self.__load_word_embedding_model()

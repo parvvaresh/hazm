@@ -5,7 +5,6 @@
 
 """
 from pathlib import Path
-from typing import Dict
 from typing import Iterator
 
 
@@ -20,7 +19,7 @@ class MirasTextReader:
     def __init__(self: "MirasTextReader", filename: str) -> None:
         self._filename = filename
 
-    def docs(self: "MirasTextReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "MirasTextReader") -> Iterator[dict[str, str]]:
         """خبرها را برمی‌گرداند.
 
         Yields:

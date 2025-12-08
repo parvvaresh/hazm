@@ -7,8 +7,6 @@
 
 import re
 from pathlib import Path
-from typing import Dict
-from typing import List
 
 from flashtext import KeywordProcessor
 from nltk.tokenize.api import TokenizerI
@@ -254,7 +252,7 @@ class WordTokenizer(TokenizerI):
 
 
 
-    def tokenize(self: "WordTokenizer", text: str) -> List[str]:
+    def tokenize(self: "WordTokenizer", text: str) -> list[str]:
         """توکن‌های متن را استخراج می‌کند.
 
         Examples:
@@ -338,7 +336,7 @@ class WordTokenizer(TokenizerI):
 
 
 
-    def join_verb_parts(self: "WordTokenizer", tokens: List[str]) -> List[str]:
+    def join_verb_parts(self: "WordTokenizer", tokens: list[str]) -> list[str]:
         """افعال چندبخشی را به هم می‌چسباند.
 
         Examples:

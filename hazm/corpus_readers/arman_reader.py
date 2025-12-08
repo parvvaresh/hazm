@@ -5,8 +5,6 @@
 
 from pathlib import Path
 from typing import Iterator
-from typing import List
-from typing import Tuple
 
 
 class ArmanReader:
@@ -21,7 +19,7 @@ class ArmanReader:
         self._file_paths = Path(corpus_folder).glob(f"{subset}*.txt")
 
 
-    def sents(self: "ArmanReader") -> Iterator[List[Tuple[str,str]]]:
+    def sents(self: "ArmanReader") -> Iterator[list[tuple[str,str]]]:
         """جملات را یک‌به‌یک در قالب لیستی از `(توکن، برچسب)`ها برمی‌گرداند.
 
         Examples:

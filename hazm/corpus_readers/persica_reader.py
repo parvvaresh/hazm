@@ -11,7 +11,6 @@
 
 """
 from pathlib import Path
-from typing import Dict
 from typing import Iterator
 
 
@@ -26,7 +25,7 @@ class PersicaReader:
     def __init__(self: "PersicaReader", csv_file: str) -> None:
         self._csv_file = csv_file
 
-    def docs(self: "PersicaReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "PersicaReader") -> Iterator[dict[str, str]]:
         """خبرها را برمی‌گرداند.
 
         هر خبر، شی‌ای متشکل از این پارامتر است:

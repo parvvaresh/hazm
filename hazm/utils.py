@@ -4,10 +4,7 @@ import re
 from os import path
 from pathlib import Path
 from typing import Any
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Tuple
 
 data_path = Path(__file__).parent / "data"
 
@@ -21,14 +18,14 @@ abbreviations = Path(data_path) / "abbreviations.dat"
 NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 
 
-def maketrans(a: str, b: str) -> Dict[int, Any]:
+def maketrans(a: str, b: str) -> dict[int, Any]:
     """هر یک از حروف رشتهٔ a را به یک حرف در رشتهٔ b مپ می‌کند."""
     return {ord(a): b for a, b in zip(a, b)}
 
 
 def words_list(
     words_file: str = default_words,
-) -> List[Tuple[str, int, Tuple[str]]]:
+) -> list[tuple[str, int, tuple[str]]]:
     """لیست کلمات را برمی‌گرداند.
 
     Examples:
@@ -52,7 +49,7 @@ def words_list(
         ]
 
 
-def stopwords_list(stopwords_file: str = default_stopwords) -> List[str]:
+def stopwords_list(stopwords_file: str = default_stopwords) -> list[str]:
     """لیست ایست‌واژه‌ها را برمی‌گرداند.
 
     Examples:
@@ -71,7 +68,7 @@ def stopwords_list(stopwords_file: str = default_stopwords) -> List[str]:
         return sorted({w.strip() for w in stopwords_file})
 
 
-def verbs_list() -> List[str]:
+def verbs_list() -> list[str]:
     """لیست افعال را برمی‌گرداند."""
     with Path.open(default_verbs, encoding="utf8") as verbs_file:
         lst = []

@@ -6,7 +6,6 @@
 """
 from pathlib import Path
 from typing import Iterator
-from typing import Tuple
 
 
 class FaSpellReader:
@@ -25,7 +24,7 @@ class FaSpellReader:
 
 
 
-    def main_entries(self: "FaSpellReader") -> Iterator[Tuple[str, str, int]]:
+    def main_entries(self: "FaSpellReader") -> Iterator[tuple[str, str, int]]:
         """کلمات اشتباه و معادل درست آن‌ها را به همراه دسته‌بندی غلط در قالب یک تاپل `(شکل غلط کلمه، شکل صحیح کلمه، دسته‌بندی غلط)`، یک به یک برمی‌گرداند.
 
         Examples:
@@ -45,7 +44,7 @@ class FaSpellReader:
                 misspelt, corrected, error_category = parts
                 yield (misspelt, corrected, int(error_category))
 
-    def ocr_entries(self: "FaSpellReader") -> Iterator[Tuple[str, str]]:
+    def ocr_entries(self: "FaSpellReader") -> Iterator[tuple[str, str]]:
         """کلمات اشتباه ocr شده و معادل درست آن‌ها را در قالب یک تاپل `(شکل غلط کلمه، شکل صحیح کلمه)`، یک به یک برمی‌گرداند.
 
 

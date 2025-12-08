@@ -54,10 +54,10 @@ class POSTagger(SequenceTagger):
             [[{'word': 'دلم', 'is_first': True, 'is_last': False, 'prefix-1': 'د', 'prefix-2': 'دل', 'prefix-3': 'دلم', 'suffix-1': 'م', 'suffix-2': 'لم', 'suffix-3': 'دلم', 'prev_word': '', 'two_prev_word': '', 'next_word': 'اینجا', 'two_next_word': 'مانده\u200cاست', 'is_numeric': False, 'prev_is_numeric': '', 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': '', 'next_is_punc': False}, {'word': 'اینجا', 'is_first': False, 'is_last': False, 'prefix-1': 'ا', 'prefix-2': 'ای', 'prefix-3': 'این', 'suffix-1': 'ا', 'suffix-2': 'جا', 'suffix-3': 'نجا', 'prev_word': 'دلم', 'two_prev_word': '.', 'next_word': 'مانده\u200cاست', 'two_next_word': '.', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': False}, {'word': 'مانده\u200cاست', 'is_first': False, 'is_last': False, 'prefix-1': 'م', 'prefix-2': 'ما', 'prefix-3': 'مان', 'suffix-1': 'ت', 'suffix-2': 'ست', 'suffix-3': 'است', 'prev_word': 'اینجا', 'two_prev_word': 'دلم', 'next_word': '.', 'two_next_word': '', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': True}, {'word': '.', 'is_first': False, 'is_last': True, 'prefix-1': '.', 'prefix-2': '.', 'prefix-3': '.', 'suffix-1': '.', 'suffix-2': '.', 'suffix-3': '.', 'prev_word': 'مانده\u200cاست', 'two_prev_word': 'اینجا', 'next_word': '', 'two_next_word': '', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': '', 'is_punc': True, 'prev_is_punc': False, 'next_is_punc': ''}]]
 
         Args:
-            tokens (List[List[str]]): جملاتی که نیاز به تبدیل آن به برداری از ویژگی‌ها است.
+            tokens (list[list[str]]): جملاتی که نیاز به تبدیل آن به برداری از ویژگی‌ها است.
 
         Returns:
-            List(List(Dict())): لیستی از لیستی از دیکشنری‌های بیان‌کننده ویژگی‌های یک کلمه.
+            list(list(dict())): لیستی از لیستی از دیکشنری‌های بیان‌کننده ویژگی‌های یک کلمه.
         """
         return [
             [self.features(token, index) for index in range(len(token))]
@@ -116,10 +116,10 @@ class POSTagger(SequenceTagger):
             [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
 
         Args:
-            tokens (List[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
+            tokens (list[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[Tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
+            (list[tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
 
         """
         tagged_token = super().tag(tokens)
@@ -145,10 +145,10 @@ class POSTagger(SequenceTagger):
             [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
 
         Args:
-            sentences (List[List[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
+            sentences (list[list[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[List[Tuple[str,str]]]): لیستی از لیستی از `(توکن، برچسب)`ها.
+            (list[list[tuple[str,str]]]): لیستی از لیستی از `(توکن، برچسب)`ها.
                     هر لیست از `(توکن،برچسب)`ها مربوط به یک جمله است.
 
         """
@@ -370,10 +370,10 @@ class SpacyPOSTagger(POSTagger):
             [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
 
         Args:
-            tokens (List[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
+            tokens (list[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
 
         Returns:
-            (List[Tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
+            (list[tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
 
         """
         if self.tagger == None:
@@ -391,11 +391,11 @@ class SpacyPOSTagger(POSTagger):
     def tag_sents(self:"SpacyPOSTagger",sents,universal_tag=True,batch_size=128):
         """
             Args:
-                sents : List[List[Tokens]]
+                sents : list[list[Tokens]]
                 batch_size : number of batches give to model for processing sentences each time
         """
         """
-            Returns : List[List[Tuple(str,str)]]
+            Returns : list[list[tuple(str,str)]]
         """
         if self.tagger == None:
             self._setup_model(sents)
@@ -441,7 +441,7 @@ class SpacyPOSTagger(POSTagger):
         """
 
         self.spacy_train_directory = data_directory
-        self.train_dataset = train_dataset ### List[List[Tuple]]
+        self.train_dataset = train_dataset ### list[list[tuple]]
         self.test_dataset = test_dataset
         if self.train_dataset:
             # Set up the training dataset configuration
