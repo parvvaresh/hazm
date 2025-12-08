@@ -264,7 +264,7 @@ class Conjugation:
         """
         return [
             x + " " + y
-            for x, y in zip(self.perfective_past("داشت"), self.imperfective_past(ri))
+            for x, y in zip(self.perfective_past("داشت"), self.imperfective_past(ri), strict=True)
         ]
 
     def passive_past_progresive(self: "Conjugation", ri: str) -> list[str]:
@@ -286,6 +286,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.passive_imperfective_past(ri),
+                strict=True,
             )
         ]
 
@@ -662,6 +663,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.imperfective_present_perfect(ri),
+                strict=True,
             )
         ]
 
@@ -684,6 +686,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.passive_imperfective_present_perfect(ri),
+                strict=True,
             )
         ]
 
@@ -836,6 +839,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.imperfective_past_precedent(ri),
+                strict=True,
             )
         ]
 
@@ -858,6 +862,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.passive_imperfective_past_precedent(ri),
+                strict=True,
             )
         ]
 
@@ -1251,6 +1256,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.imperfective_past_precedent_perfect(ri),
+                strict=True,
             )
         ]
 
@@ -1275,6 +1281,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.passive_imperfective_past_precedent_perfect(ri),
+                strict=True,
             )
         ]
 
@@ -1580,6 +1587,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_present("دار"),
                 self.imperfective_present(rii),
+                strict=True,
             )
         ]
 
@@ -1602,6 +1610,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_present("دار"),
                 self.passive_imperfective_present(ri),
+                strict=True,
             )
         ]
 
@@ -2000,7 +2009,7 @@ class Conjugation:
             result.append(self.future_precedent(ri))
             result.append(self.future_precedent_imperfective(ri))
 
-        return sum(result, [])
+        return [item for sublist in result for item in sublist]
 
     def get_all(self: "Conjugation", verb: str) -> list[str]:
         """تمام صورت‌های صرفی فعل را در وجوه اخباری، التزامی، دستوری و در اشکال منفی و مثبت و مجهول برمی‌گرداند.
@@ -2313,4 +2322,4 @@ class Conjugation:
         # آیندهٔ پیشین پایای مجهول منفی
         result.append(self.negative_passive_future_precedent_imperfective(ri))
 
-        return sum(result, [])
+        return [item for sublist in result for item in sublist]

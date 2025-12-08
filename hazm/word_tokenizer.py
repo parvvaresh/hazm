@@ -233,9 +233,9 @@ class WordTokenizer(TokenizerI):
                 "نخواهند",
             }
 
-            with Path.open(verbs_file, encoding="utf8") as verbs_file:
+            with Path.open(verbs_file, encoding="utf8") as file:
                 self.verbs = list(
-                    reversed([verb.strip() for verb in verbs_file if verb]),
+                    reversed([verb.strip() for verb in file if verb]),
                 )
                 self.bons = {verb.split("#")[0] for verb in self.verbs}
                 self.verbe = set(

@@ -47,7 +47,7 @@ def iob_data_maker(tokens):
             iob_features(words=word_tokens, pos_taggs=tag_tokens, index=index)
             for index in range(len(word_tokens))
         ]
-        for word_tokens, tag_tokens in zip(words, tags)
+        for word_tokens, tag_tokens in zip(words, tags, strict=True)
     ]
 
 
@@ -68,7 +68,7 @@ class SequenceTagger:
         self.data_maker = data_maker
 
     def __add_label(self: "SequenceTagger", sentence, tags):
-        return [(word, tag) for word, tag in zip(sentence, tags)]
+        return [(word, tag) for word, tag in zip(sentence, tags, strict=True)]
 
     def __tag(self: "SequenceTagger", tokens):
         return self.__add_label(tokens, self.model.tag(self.data_maker([tokens])[0]))
@@ -79,7 +79,7 @@ class SequenceTagger:
         trainer = Trainer(verbose=verbose)
         trainer.set_params(args)
 
-        for xseq, yseq in zip(x, y):
+        for xseq, yseq in zip(x, y, strict=True):
             trainer.append(xseq, yseq)
 
         start_time = time.time()
@@ -274,7 +274,7 @@ class IOBTagger(SequenceTagger):
     def __iob_format(self: "SequenceTagger", tagged_data, chunk_tags):
         return [
             (token[0], token[1], chunk_tag[1])
-            for token, chunk_tag in zip(tagged_data, chunk_tags)
+            for token, chunk_tag in zip(tagged_data, chunk_tags, strict=True)
         ]
 
     def tag(self: "SequenceTagger", tagged_data):
@@ -318,7 +318,7 @@ class IOBTagger(SequenceTagger):
         chunk_tags = super().tag_sents(sentences)
         return [
             self.__iob_format(tagged_data, chunks)
-            for tagged_data, chunks in zip(sentences, chunk_tags)
+            for tagged_data, chunks in zip(sentences, chunk_tags, strict=True)
         ]
 
     def train(

@@ -59,21 +59,21 @@ class InformalNormalizer(Normalizer):
             fv = self.lemmatizer.conjugation.get_all(f)
             res = {}
             if flag:
-                for i, j in zip(iv, fv[48:]):
-                    res[i] = j
-                    if "‌" in i:
-                        res[i.replace("‌", "")] = j
-                        res[i.replace("‌", " ")] = j
-                    if i.endswith("ین"):
-                        res[i[:-1] + "د"] = j
+                for key, value in zip(iv, fv[48:], strict=True):
+                    res[key] = value
+                    if "‌" in key:
+                        res[key.replace("‌", "")] = value
+                        res[key.replace("‌", " ")] = value
+                    if key.endswith("ین"):
+                        res[key[:-1] + "د"] = value
             else:
-                for i, j in zip(iv[8:], fv[56:]):
-                    res[i] = j
-                    if "‌" in i:
-                        res[i.replace("‌", "")] = j
-                        res[i.replace("‌", " ")] = j
-                    if i.endswith("ین"):
-                        res[i[:-1] + "د"] = j
+                for key, value in zip(iv[8:], fv[56:], strict=True):
+                    res[key] = value
+                    if "‌" in key:
+                        res[key.replace("‌", "")] = value
+                        res[key.replace("‌", " ")] = value
+                    if key.endswith("ین"):
+                        res[key[:-1] + "د"] = value
 
             return res
 
@@ -129,7 +129,7 @@ class InformalNormalizer(Normalizer):
             res = []
             for i in up:
                 res.append([lst[0], *i])
-                res.append([lst[0] + i[0]] + i[1:])
+                res.append([lst[0] + i[0], *i[1:]])
             res.sort(key=len)
             return res
 
@@ -825,13 +825,13 @@ class InformalLemmatizer(Lemmatizer):
 
         with Path.open(informal_verbs, encoding="utf8") as vf:
             for f, i, _flag in [x.strip().split(" ", 2) for x in vf]:
-                self.verbs.update({x: f for x in self.iconjugations(i)})
+                self.verbs.update(dict.fromkeys(self.iconjugations(i), f))
 
         with Path.open(informal_words, encoding="utf8") as wf:
             self.words.update([x.strip().split(" ", 1)[0] for x in wf])
 
     def iconjugations(self: "InformalNormalizer", verb: str):
-        """iconjugations."""
+        """Iconjugations."""
         ends = ["م", "ی", "", "یم", "ین", "ن"]
         present_simples = [verb + end for end in ends]
         if verb.endswith("ا"):

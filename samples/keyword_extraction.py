@@ -7,13 +7,12 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 
-from hazm import SentEmbedding
-from hazm import POSTagger
-from hazm.corpus_readers import PersicaReader
 from hazm import Normalizer
-from hazm import word_tokenize
+from hazm import POSTagger
+from hazm import SentEmbedding
 from hazm import sent_tokenize
-
+from hazm import word_tokenize
+from hazm.corpus_readers import PersicaReader
 
 grammers = [
     """
@@ -85,7 +84,7 @@ def vectorSimilarity(candidates_vector, text_vector, norm=True):
         candidates_sim_text_norm = 0.5 + (
             candidates_sim_text_norm - np.average(candidates_sim_text_norm)
         ) / np.std(candidates_sim_text_norm)
-        np.fill_diagonal(candidate_sim_candidate, np.NaN)
+        np.fill_diagonal(candidate_sim_candidate, np.nan)
         candidate_sim_candidate_norm = candidate_sim_candidate / np.nanmax(
             candidate_sim_candidate,
             axis=0,

@@ -4,8 +4,8 @@
 ریخت‌شناسی تک‌تک کلمات قرآن کریم است.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from hazm.utils import maketrans
 
@@ -45,24 +45,26 @@ class QuranReader:
             جزء بعدی متن قرآن.
 
         """
-        for line in Path(self._quran_file).open(encoding="utf8"):
-            if not line.startswith("("):
-                continue
-            parts = line.strip().split("\t")
+        with Path(self._quran_file).open(encoding="utf8") as file:
+            for line in file:
+                if not line.startswith("("):
+                    continue
+                parts = line.strip().split("\t")
 
-            part = {
-                "loc": eval(parts[0].replace(":", ",")), # noqa: PGH001
-                "text": parts[1].translate(buckwalter_transliteration),
-                "tag": parts[2],
-            }
+                part = {
+                    "loc": eval(parts[0].replace(":", ",")),
+                    "text": parts[1].translate(buckwalter_transliteration),
+                    "tag": parts[2],
+                }
 
-            features = parts[3].split("|")
-            for feature in features:
-                if feature.startswith("LEM:"):
-                    part["lem"] = feature[4:].translate(buckwalter_transliteration)
-                elif feature.startswith("ROOT:"):
-                    part["root"] = feature[5:].translate(buckwalter_transliteration)
-            yield part
+                features = parts[3].split("|")
+                for feature in features:
+                    if feature.startswith("LEM:"):
+                        part["lem"] = feature[4:].translate(buckwalter_transliteration)
+                    elif feature.startswith("ROOT:"):
+                        part["root"] = feature[5:].translate(buckwalter_transliteration)
+                yield part
+
 
     def words(
         self: "QuranReader",

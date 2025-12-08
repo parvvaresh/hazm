@@ -7,14 +7,12 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Type
 
 from nltk.parse import DependencyGraph
 from nltk.parse.api import ParserI
 from nltk.parse.malt import MaltParser as NLTKMaltParser
-
 from tqdm import tqdm
-import os
+
 
 class MaltParser(NLTKMaltParser):
     """این کلاس شامل توابعی برای شناسایی وابستگی‌های دستوری است.
@@ -133,7 +131,7 @@ class MaltParser(NLTKMaltParser):
 
             return (
                 DependencyGraph(item)
-                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: SIM115, PTH123
+                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: PTH123
                 if item.strip()
             )
 
@@ -165,7 +163,7 @@ class TurboParser(ParserI):
     def parse_sents(
         self: "TurboParser",
         sentences: list[list[tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
+    ) -> type[DependencyGraph]:
         """parse_sents."""
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.tagged_parse_sents(tagged_sentences)
@@ -173,7 +171,7 @@ class TurboParser(ParserI):
     def tagged_parse_sents(
         self: "TurboParser",
         sentences: list[list[tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
+    ) -> type[DependencyGraph]:
         """tagged_parse_sents."""
         input_file = tempfile.NamedTemporaryFile(
             prefix="turbo_input.conll",
@@ -218,7 +216,7 @@ class TurboParser(ParserI):
 
             return (
                 DependencyGraph(item, cell_extractor=lambda cells: cells[1:8])
-                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: SIM115, PTH123
+                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: PTH123
                 if item.strip()
             )
 
@@ -250,12 +248,11 @@ class SpacyDependencyParser(MaltParser):
         tagger: object,
         lemmatizer: object,
         working_dir: str = "universal_dependency_parser",
-        model_file: str = "dependency_parser/ParsbertChangeTag/model-best"
+        model_file: str = "dependency_parser/ParsbertChangeTag/model-best",
     ) -> None:
         import spacy
         from spacy.tokens import Doc
-        from tqdm import tqdm
-        
+
 
         """
         Initialize the SpacyDependencyParser object.
@@ -276,8 +273,7 @@ class SpacyDependencyParser(MaltParser):
         self._setup_model()
 
     def _setup_model(self:"SpacyDependencyParser"):
-        """
-        Load the Spacy dependency parser model and set up a custom tokenizer.
+        """Load the Spacy dependency parser model and set up a custom tokenizer.
         """
         try:
             self.model = spacy.load(self.mco)
@@ -286,17 +282,15 @@ class SpacyDependencyParser(MaltParser):
             raise ValueError("Something wrong loading the dependencyParser . Checkout for correctness or existence of path")
 
     def _add_sentence2dict(self:"SpacyDependencyParser", sent):
-        """
-        Add a sentence to the dictionary for later use in custom tokenization.
+        """Add a sentence to the dictionary for later use in custom tokenization.
 
         Parameters:
         - sent: The sentence to be added to the dictionary.
         """
-        self.peykare_dict[' '.join([w for w in sent])] = [w for w in sent]
+        self.peykare_dict[" ".join([w for w in sent])] = [w for w in sent]
 
     def _custom_tokenizer(self:"SpacyDependencyParser", text):
-        """
-        Custom tokenizer function for Spacy, using a pre-built dictionary.
+        """Custom tokenizer function for Spacy, using a pre-built dictionary.
 
         Parameters:
         - text: The input text to be tokenized.
@@ -306,8 +300,7 @@ class SpacyDependencyParser(MaltParser):
         return Doc(self.model.vocab, self.peykare_dict[text])
 
     def parse_sents(self: MaltParser, sentences: str, verbose: bool = False) -> str:
-        """
-        Parse a list of sentences and return the dependency graphs.
+        """Parse a list of sentences and return the dependency graphs.
 
         Parameters:
         - sentences: List of sentences to be parsed.
@@ -334,29 +327,28 @@ class SpacyDependencyParser(MaltParser):
                     token.pos_,
                     "_",
                     head_id,
-                    token.dep_, 
+                    token.dep_,
                     "_",
                     "_",
-                )
+                ),
             )
         return "\n".join(conll_lines)
 
     def parse_tagged_sents(self: "SpacyDependencyParser", sentences: list[list[tuple[str, str]]], verbose: bool = False) -> str:
-        """
-        Parse a list of tagged sentences and return the dependency graphs.
+        """Parse a list of tagged sentences and return the dependency graphs.
 
         Parameters:
         - sentences: List of tagged sentences to be parsed.
         - verbose: Whether to print additional information during parsing.
         """
-        texts = [' '.join([w for w , _ in sentence]) for sentence in sentences]
+        texts = [" ".join([w for w , _ in sentence]) for sentence in sentences]
         docs = list(self.model.pipe(texts))
         conll_list = []
         for doc_id , doc in enumerate(docs):
             pos_tags = [tag for w , tag in sentences[doc_id]]
             for i in range(len(doc)):
                 docs[doc_id][i].pos_ = pos_tags[i]
-            conll_sample = self._spacy_to_conll(docs[doc_id])
+            conll_sample = self._spacy_to_conll(doc)
             conll_list.append(conll_sample)
 
         return (

@@ -18,9 +18,9 @@
 
 import codecs
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
 
 from hazm.normalizer import Normalizer
 from hazm.word_tokenizer import WordTokenizer
@@ -137,25 +137,14 @@ def coarse_pos_u(tags: list[str], word: str) -> list[str]:
         "سوّم",
     }
     try:
-        old_pos = list(
-            set(tags)
-            & {
-                "N",
-                "V",
-                "AJ",
-                "ADV",
-                "PRO",
-                "DET",
-                "P",
-                "POSTP",
-                "NUM",
-                "CONJ",
-                "PUNC",
-                "CL",
-                "INT",
-                "RES",
-            },
-        )[0]
+        old_pos = next(
+            iter(set(tags) & {
+                "N", "V", "AJ", "ADV", "PRO", "DET",
+                "P", "POSTP", "NUM", "CONJ", "PUNC",
+                "CL", "INT", "RES",
+            }),
+        )
+
         if old_pos == "CONJ" and word in sconj_list:
             return "SCONJ"
         if old_pos == "NUM" and word in num_adj_list:
@@ -180,25 +169,14 @@ def coarse_pos_e(tags: list[str], word) -> list[str]: # noqa: D417, ARG001
 
     """
     try:
-        return list(
-            set(tags)
-            & {
-                "N",
-                "V",
-                "AJ",
-                "ADV",
-                "PRO",
-                "DET",
-                "P",
-                "POSTP",
-                "NUM",
-                "CONJ",
-                "PUNC",
-                "CL",
-                "INT",
-                "RES",
-            },
-        )[0] + (",EZ" if "EZ" in tags else "")
+        return next(
+            iter(set(tags) & {
+                "N", "V", "AJ", "ADV", "PRO", "DET",
+                "P", "POSTP", "NUM", "CONJ", "PUNC",
+                "CL", "INT", "RES",
+            }),
+        ) + (",EZ" if "EZ" in tags else "")
+
     except:
         return "N"
 

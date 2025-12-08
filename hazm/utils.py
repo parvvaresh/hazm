@@ -1,10 +1,10 @@
 """این ماژول شامل کلاس‌ها و توابع کمکی است."""
 
 import re
+from collections.abc import Iterator
 from os import path
 from pathlib import Path
 from typing import Any
-from typing import Iterator
 
 data_path = Path(__file__).parent / "data"
 
@@ -20,7 +20,7 @@ NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 
 def maketrans(a: str, b: str) -> dict[int, Any]:
     """هر یک از حروف رشتهٔ a را به یک حرف در رشتهٔ b مپ می‌کند."""
-    return {ord(a): b for a, b in zip(a, b)}
+    return {ord(a): b for a, b in zip(a, b, strict=True)}
 
 
 def words_list(
@@ -40,8 +40,8 @@ def words_list(
         فهرست کلمات.
 
     """
-    with Path.open(words_file, encoding="utf-8") as words_file:
-        items = [line.strip().split("\t") for line in words_file]
+    with Path.open(words_file, encoding="utf-8") as file:
+        items = [line.strip().split("\t") for line in file]
         return [
             (item[0], int(item[1]), tuple(item[2].split(",")))
             for item in items
@@ -64,8 +64,8 @@ def stopwords_list(stopwords_file: str = default_stopwords) -> list[str]:
         فهرست ایست‌واژه‌ها.
 
     """
-    with Path.open(stopwords_file, encoding="utf8") as stopwords_file:
-        return sorted({w.strip() for w in stopwords_file})
+    with Path.open(stopwords_file, encoding="utf8") as file:
+        return sorted({w.strip() for w in file})
 
 
 def verbs_list() -> list[str]:
@@ -99,9 +99,9 @@ def present_roots() -> str:
 
 def regex_replace(patterns: str, text: str) -> str:
     """الگوی ریجکس را یافته و با متن داده شده جایگزین می‌کند."""
-    compiled_patterns = [(re.compile(pattern), repl) for pattern, repl in patterns]    
+    compiled_patterns = [(re.compile(pattern), repl) for pattern, repl in patterns]
 
     for pattern, repl in compiled_patterns:
         text = pattern.sub(repl, text)
-    
+
     return text

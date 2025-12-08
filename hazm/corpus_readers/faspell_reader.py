@@ -4,8 +4,8 @@
 این پیکره همچنین ۸۰۱ تشخیص اشتباه سیستم‌های OCR را نیز در بر دارد.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class FaSpellReader:

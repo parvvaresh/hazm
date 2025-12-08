@@ -2,39 +2,40 @@
 PerUDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
 """
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from hazm.corpus_readers import DadeganReader
 
 
 def conllu2conll(conllu_path: str) -> str :
     """یک فایل conllu را می‌گیرد و بعد از تبدیل به فرمت قدیمی conll آن را به صورت یک رشتهٔ متنی برمی‌گرداند."""
-    reader1 = Path(conllu_path).open(encoding="utf8")
-
     delex = False
     if len(sys.argv) > 3 and sys.argv[3] == "delex":
         delex = True
 
-    line1 = reader1.readline()
-
     lines = []
-    while line1:
-        if len(line1.strip()) == 0:
-            lines.append(line1)
-        else:
-            spl = line1.strip().split("\t")
-            if len(spl) > 2 and "." not in spl[0] and spl[0].isdigit():
-                if ":" in spl[7]:
-                    spl[7] = spl[7][:spl[7].rfind(":")]
-                if spl[6] == "_" or spl[6] == "-":
-                    spl[6] = "-1"
-                if delex:
-                    spl[1] = "_"
-                    spl[2] = "_"
-                lines.append("\t".join(spl) + "\n")
 
+    with Path(conllu_path).open(encoding="utf8") as reader1:
         line1 = reader1.readline()
+
+        while line1:
+            if len(line1.strip()) == 0:
+                lines.append(line1)
+            else:
+                spl = line1.strip().split("\t")
+                if len(spl) > 2 and "." not in spl[0] and spl[0].isdigit():
+                    if ":" in spl[7]:
+                        spl[7] = spl[7][:spl[7].rfind(":")]
+                    if spl[6] == "_" or spl[6] == "-":
+                        spl[6] = "-1"
+                    if delex:
+                        spl[1] = "_"
+                        spl[2] = "_"
+                    lines.append("\t".join(spl) + "\n")
+
+            line1 = reader1.readline()
+
     return "".join(lines)
 
 class UniversalDadeganReader(DadeganReader):

@@ -473,9 +473,7 @@ class Normalizer:
                 return r
             return m
 
-        text = re.sub(r"\bن?می[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+", replace_match, text)
-    
-        return text
+        return re.sub(r"\bن?می[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]+", replace_match, text)
 
     def token_spacing(self: "Normalizer", tokens: list[str]) -> list[str]:
         """توکن‌های ورودی را به فهرستی از توکن‌های نرمال‌سازی شده تبدیل می‌کند.
@@ -514,8 +512,8 @@ class Normalizer:
                 token_pair = result[-1] + "‌" + token
                 if (
                     token_pair in self.verbs
-                    or token_pair in self.words
-                    and self.words[token_pair][0] > 0
+                    or (token_pair in self.words
+                    and self.words[token_pair][0] > 0)
                 ):
                     joined = True
 

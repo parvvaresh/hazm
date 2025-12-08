@@ -3,8 +3,8 @@
 [پیکرهٔ آرمان](https://github.com/HaniehP/PersianNER) یک پیکره برای موجودیت‌های نامدار است که شامل ۲۵۰,۰۱۵ توکنِ برچسب‌خورده در قالب ۷۶۸۲ جمله است که با فرمت IOB ذخیره شده است.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class ArmanReader:

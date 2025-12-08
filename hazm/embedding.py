@@ -2,10 +2,9 @@
 import multiprocessing
 import os
 import warnings
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
-from typing import Type
 
 import fasttext as fstxt
 import numpy as np
@@ -88,7 +87,7 @@ class WordEmbedding:
     def train(
         self: "WordEmbedding",
         dataset_path: str,
-        workers: int = multiprocessing.cpu_count() - 1,  # noqa: B008
+        workers: int = multiprocessing.cpu_count() - 1,
         vector_size: int = 200,
         epochs: int = 10,
         min_count: int = 5,
@@ -154,7 +153,7 @@ class WordEmbedding:
         self.load_model(model_path=dest_path)
         print("model loaded.")
 
-    def __getitem__(self: "WordEmbedding", word: str) -> Type[ndarray]:
+    def __getitem__(self: "WordEmbedding", word: str) -> type[ndarray]:
         """__getitem__."""
         if not self.model:
             msg = "Model must not be None! Please load model first."
@@ -236,7 +235,7 @@ class WordEmbedding:
             raise AttributeError(msg)
         return self.model.most_similar(word, topn=topn)
 
-    def get_normal_vector(self: "WordEmbedding", word: str) -> Type[ndarray]:
+    def get_normal_vector(self: "WordEmbedding", word: str) -> type[ndarray]:
         """بردار امبدینگ نرمالایزشدهٔ کلمه ورودی را برمی‌گرداند.
 
         Examples:
@@ -295,7 +294,7 @@ class WordEmbedding:
         """
         return self.model.key_to_index
 
-    def get_vectors(self: "WordEmbedding") -> Type[ndarray]:
+    def get_vectors(self: "WordEmbedding") -> type[ndarray]:
         """وکتورهای توصیف کننده کلمات را برمیگرداند.(عناصر این وکتور با وکتور کلمات تابع  get_vocabs هم‌اندیس هستند.
 
         Examples:
@@ -387,7 +386,7 @@ class SentEmbedding:
         self: "SentEmbedding",
         dataset_path: str,
         min_count: int = 5,
-        workers: int = multiprocessing.cpu_count() - 1,  # noqa: B008
+        workers: int = multiprocessing.cpu_count() - 1,
         windows: int = 5,
         vector_size: int = 300,
         epochs: int = 10,
@@ -435,7 +434,7 @@ class SentEmbedding:
         model.save(dest_path)
         print("Model saved.")
 
-    def __getitem__(self: "SentEmbedding", sent: str) -> Type[ndarray]:
+    def __getitem__(self: "SentEmbedding", sent: str) -> type[ndarray]:
         """__getitem__."""
         if not self.model:
             msg = "Model must not be None! Please load model first."

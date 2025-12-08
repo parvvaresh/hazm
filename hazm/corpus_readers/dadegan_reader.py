@@ -3,10 +3,10 @@
 PerDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
 
 """
+
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
-from typing import Type
 
 from nltk.parse import DependencyGraph
 from nltk.tree import Tree
@@ -48,7 +48,7 @@ def coarse_pos_u(tags: list[str], word: str) -> str:
     return pos_mapped
 
 
-def coarse_pos_e(tags: list[str], word) -> str: # noqa: ARG001
+def coarse_pos_e(tags: list[str], word) -> str:  # noqa: ARG001
     """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
 
     Examples:
@@ -73,14 +73,14 @@ def coarse_pos_e(tags: list[str], word) -> str: # noqa: ARG001
     return mapping.get(tags[0], "X") + ("e" if "EZ" in tags else "")
 
 
-def word_nodes(tree: Type[Tree]) -> list[dict[str, Any]]:
+def word_nodes(tree: type[Tree]) -> list[dict[str, Any]]:
     """نودها را به صورت مرتب‌شده برمی‌گرداند."""
     return sorted(tree.nodes.values(), key=lambda node: node["address"])[1:]
 
 
-def node_deps(node: list[dict[str, Any]]) -> list[Any]:
+def node_deps(node: dict[str, Any]) -> list[Any]:
     """مقادیر موجود در فیلد deps نود ورودی را برمی‌گرداند."""
-    return sum(list(node["deps"].values()), [])
+    return [dep for deps in node["deps"].values() for dep in deps]
 
 
 class DadeganReader:
@@ -98,6 +98,7 @@ class DadeganReader:
         pos_map: str = coarse_pos_e,
         universal_pos: bool = False,
     ) -> None:
+        """Constructor."""
         self._conll_file = conll_file
         if pos_map is None:
             self._pos_map = lambda tags: ",".join(tags)
@@ -131,7 +132,7 @@ class DadeganReader:
                 if item.strip():
                     yield item
 
-    def trees(self: "DadeganReader") -> Iterator[Type[Tree]]:
+    def trees(self: "DadeganReader") -> Iterator[type[Tree]]:
         """ساختار درختی جملات را برمی‌گرداند.
 
         Yields:
@@ -168,7 +169,7 @@ class DadeganReader:
         for tree in self.trees():
             yield [(node["word"], node["mtag"]) for node in word_nodes(tree)]
 
-    def chunked_trees(self: "DadeganReader") -> Iterator[Type[Tree]]:
+    def chunked_trees(self: "DadeganReader") -> Iterator[type[Tree]]:
         """درخت وابستگی‌های جملات را برمی‌گرداند.
 
         Examples:
@@ -194,7 +195,7 @@ class DadeganReader:
                             label = "POSTP"
                         if (
                             d == n - 1
-                            and type(chunks[-1]) == Tree
+                            and isinstance(chunks[-1], Tree)
                             and chunks[-1].label() == label
                         ):
                             chunks[-1].append(item)
@@ -202,7 +203,7 @@ class DadeganReader:
                     if (
                         node["head"] == n - 1
                         and len(chunks) > 0
-                        and type(chunks[-1]) == Tree
+                        and isinstance(chunks[-1], Tree)
                         and chunks[-1].label() == label
                     ):
                         chunks[-1].append(item)
@@ -214,7 +215,7 @@ class DadeganReader:
                         item[0]
                         in {"'", '"', "(", ")", "{", "}", "[", "]", "-", "#", "«", "»"}
                         and len(chunks) > 0
-                        and type(chunks[-1]) == Tree
+                        and isinstance(chunks[-1], Tree)
                     ):
                         for leaf in chunks[-1].leaves():
                             if leaf[1] == item[1]:
@@ -236,7 +237,7 @@ class DadeganReader:
                 }:
                     if node["rel"] in {"MOZ", "NPOSTMOD"}:
                         if len(chunks) > 0:
-                            if type(chunks[-1]) == Tree:
+                            if isinstance(chunks[-1], Tree):
                                 j = n - len(chunks[-1].leaves())
                                 chunks[-1].append(item)
                             else:
@@ -248,7 +249,7 @@ class DadeganReader:
                                 if len(chunks) < 1:
                                     chunks.append(Tree("NP", leaves))
                                     j -= 1
-                                elif type(chunks[-1]) == Tree:
+                                elif isinstance(chunks[-1], Tree):
                                     j -= len(chunks[-1])
                                     for leaf in leaves:
                                         chunks[-1].append(leaf)
@@ -271,7 +272,7 @@ class DadeganReader:
                             leaves = [item]
                             j = n - 1
                             while j >= conj["head"]:
-                                if type(chunks[-1]) is Tree:
+                                if isinstance(chunks[-1], Tree):
                                     j -= len(chunks[-1].leaves())
                                     label = chunks[-1].label()
                                     leaves = chunks.pop().leaves() + leaves
@@ -283,7 +284,7 @@ class DadeganReader:
                     elif (
                         node["head"] == n - 1
                         and len(chunks) > 0
-                        and type(chunks[-1]) == Tree
+                        and isinstance(chunks[-1], Tree)
                         and chunks[-1].label() != "PP"
                     ):
                         chunks[-1].append(item)
@@ -295,7 +296,7 @@ class DadeganReader:
                         label = "ADJP"
                         i = n - node["head"]
                         while i > 0:
-                            if type(chunks[-1]) == Tree:
+                            if isinstance(chunks[-1], Tree):
                                 label = chunks[-1].label()
                                 leaves = chunks.pop().leaves()
                                 i -= len(leaves)
@@ -314,7 +315,7 @@ class DadeganReader:
                         i = n - node["head"]
                         while i > 0:
                             label = "ADJP"
-                            if type(chunks[-1]) == Tree:
+                            if isinstance(chunks[-1], Tree):
                                 label = chunks[-1].label()
                                 leaves = chunks.pop().leaves()
                                 i -= len(leaves)
@@ -327,7 +328,7 @@ class DadeganReader:
                     for d in node_deps(node):
                         if (
                             d == n - 1
-                            and type(chunks[-1]) == Tree
+                            and isinstance(chunks[-1], Tree)
                             and chunks[-1].label() != "PP"
                             and appended is not True
                         ):
@@ -347,7 +348,7 @@ class DadeganReader:
                             np_nodes = [item]
                             i = n - d
                             while i > 0:
-                                if type(chunks[-1]) == Tree:
+                                if isinstance(chunks[-1], Tree):
                                     leaves = chunks.pop().leaves()
                                     i -= len(leaves)
                                     np_nodes = leaves + np_nodes
@@ -368,7 +369,7 @@ class DadeganReader:
                     for d in node_deps(node):
                         if (
                             d == n - 1
-                            and type(chunks[-1]) == Tree
+                            and isinstance(chunks[-1], Tree)
                             and tree.nodes[d]["rel"] in {"NVE", "ENC"}
                             and appended is not True
                         ):
@@ -380,7 +381,7 @@ class DadeganReader:
                             vp_nodes = [item]
                             i = n - d
                             while i > 0:
-                                if type(chunks[-1]) == Tree:
+                                if isinstance(chunks[-1], Tree):
                                     leaves = chunks.pop().leaves()
                                     i -= len(leaves)
                                     vp_nodes = leaves + vp_nodes
@@ -400,7 +401,7 @@ class DadeganReader:
                 elif node["ctag"] in {"ADV", "SADV"}:
                     appended = False
                     for d in node_deps(node):
-                        if d == n - 1 and type(chunks[-1]) == Tree:
+                        if d == n - 1 and isinstance(chunks[-1], Tree):
                             leaves = chunks.pop().leaves()
                             leaves.append(item)
                             chunks.append(Tree("ADVP", leaves))

@@ -3,8 +3,8 @@
 [پیکرهٔ میزان](https://github.com/omidkashefi/Mizan/) حاوی بیش از ۱ میلیون جمله از متون انگلیسی (اغلب در حوزهٔ ادبیات کلاسیک) و ترجمهٔ این جملات به فارسی که توسط دبیرخانهٔ شورای عالی اطلاع‌رسانی تهیه شده است..
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class MizanReader:
@@ -61,4 +61,4 @@ class MizanReader:
         Yields:
             جملهٔ بعدی در قالب یک زوج `(جملهٔ انگلیسی، جملهٔ فارسی)`.
         """
-        yield from zip(self.english_sentences(), self.persian_sentences())
+        yield from zip(self.english_sentences(), self.persian_sentences(), strict=True)

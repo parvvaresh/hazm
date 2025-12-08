@@ -15,9 +15,9 @@
 
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
 from xml.dom import minidom
 
 
@@ -44,7 +44,7 @@ class DegarbayanReader:
         self._root = root
         self._corpus_file = corpus_file
         self._judge_type = judge_type
-        if judge_type != "three_class" and judge_type != "two_class":
+        if judge_type not in {"three_class", "two_class"}:
             self._judge_type = "three_class"
 
     def docs(self: "DegarbayanReader") -> Iterator[dict[str, Any]]:

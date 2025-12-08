@@ -1,6 +1,6 @@
 """این ماژول، پیکره‌های متنی خام را می‌خواند."""
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 
 from nltk.corpus import PlaintextCorpusReader
 from nltk.corpus.reader import StreamBackedCorpusView

@@ -10,8 +10,8 @@
 """
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 from hazm import Normalizer
 
@@ -104,7 +104,7 @@ class BijankhanReader:
                     if (
                         tag == "DELM"
                         and word in ("#", "*", ".", "؟", "!")
-                        and len(sentence)
+                        and sentence
                     ):
                         yield sentence
                         sentence = []

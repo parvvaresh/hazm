@@ -3,8 +3,8 @@
 پیکرهٔ [pn-summary](https://github.com/hooshvare/pn-summary) با هدف کمک به سیستم‌های یادگیری عمیق و ساخت مدل‌های بهتر برای خلاصه‌سازی دقیق‌تر متن‌های فارسی تهیه شده است. این پیکره شامل ۹۳,۲۰۷ متن خبری تمیزشده است که از ۶ خبرگزاری فارسی و از میان حدوداً ۲۰۰ هزار خبر استخراج شده است.
 """
 import csv
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class PnSummaryReader:

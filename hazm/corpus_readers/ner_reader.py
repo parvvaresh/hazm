@@ -3,8 +3,8 @@
 [پیکرهٔ موجودیت‌های نامدار](https://github.com/Text-Mining/Persian-NER/) حاوی ۲۵ میلیون توکنِ برچسب‌خورده از ویکی‌پدیای فارسی در قالب حدود یک میلیون جمله است.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class NerReader:

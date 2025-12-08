@@ -1,11 +1,11 @@
-from typing import Callable
+from collections.abc import Callable
 
 import pytest
 
 
 class TestWordTokenizer:
 
-    @pytest.fixture()
+    @pytest.fixture
     def tokenizer(self: "TestWordTokenizer", word_tokenizer: Callable):
         word_tokenizer._join_verb_parts = True # noqa: SLF001
         word_tokenizer.separate_emoji = False
