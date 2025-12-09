@@ -13,7 +13,7 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
-from hazm import Normalizer
+from ..normalizer import Normalizer
 
 from .peykare_reader import join_verb_parts
 

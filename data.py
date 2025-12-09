@@ -6,8 +6,13 @@ from itertools import islice
 from nltk.tag import untag
 from sklearn.model_selection import train_test_split
 
-from hazm import (Chunker, InformalNormalizer, Lemmatizer, Normalizer,
-                  POSTagger, sent_tokenize)
+from hazm.chunker import Chunker
+from hazm.informal_normalizer import InformalNormalizer
+from hazm.lemmatizer import Lemmatizer
+from hazm.normalizer import Normalizer
+from hazm.pos_tagger import POSTagger
+from hazm import sent_tokenize
+
 from hazm.chunker import tree2brackets
 from hazm.corpus_readers import (DadeganReader, PeykareReader, SentiPersReader,
                                  TNewsReader, TreebankReader)

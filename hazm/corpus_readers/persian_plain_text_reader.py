@@ -6,8 +6,8 @@ from nltk.corpus import PlaintextCorpusReader
 from nltk.corpus.reader import StreamBackedCorpusView
 from nltk.corpus.reader import read_blankline_block
 
-from hazm import SentenceTokenizer
-from hazm import WordTokenizer
+from ..sentence_tokenizer import SentenceTokenizer
+from ..word_tokenizer import WordTokenizer
 
 
 class PersianPlainTextReader(PlaintextCorpusReader):

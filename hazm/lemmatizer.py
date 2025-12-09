@@ -12,10 +12,10 @@
 
 
 
-from hazm import Stemmer
-from hazm import WordTokenizer
-from hazm import default_verbs
-from hazm import default_words
+from .stemmer import Stemmer
+from .word_tokenizer import WordTokenizer
+from .utils import default_verbs
+from .utils import default_words
 
 
 class Lemmatizer:

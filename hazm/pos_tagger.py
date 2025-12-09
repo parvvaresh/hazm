@@ -15,7 +15,7 @@ from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
-from hazm import SequenceTagger
+from .sequence_tagger import SequenceTagger
 
 punctuation_list = [
     '"',

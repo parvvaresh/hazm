@@ -2,7 +2,7 @@
 
 
 
-from hazm import Lemmatizer
+from .lemmatizer import Lemmatizer
 
 
 class TokenSplitter:

@@ -22,8 +22,8 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from hazm.normalizer import Normalizer
-from hazm.word_tokenizer import WordTokenizer
+from ..normalizer import Normalizer
+from ..word_tokenizer import WordTokenizer
 
 
 def coarse_pos_u(tags: list[str], word: str) -> list[str]:

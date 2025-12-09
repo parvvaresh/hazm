@@ -37,3 +37,8 @@ class SentenceTokenizer(TokenizerI):
             for sentence in text.split("\n\n")
             if sentence.strip()
         ]
+
+
+def sent_tokenize(text: str) -> list[str]:
+    """توکنایزر برای استخراج جملات از متن."""
+    return SentenceTokenizer().tokenize(text)

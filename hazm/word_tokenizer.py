@@ -11,10 +11,10 @@ from pathlib import Path
 from flashtext import KeywordProcessor
 from nltk.tokenize.api import TokenizerI
 
-from hazm import abbreviations
-from hazm import default_verbs
-from hazm import default_words
-from hazm import words_list
+from .utils import abbreviations
+from .utils import default_verbs
+from .utils import default_words
+from .utils import words_list
 
 
 class WordTokenizer(TokenizerI):
@@ -371,6 +371,14 @@ class WordTokenizer(TokenizerI):
             else:
                 result.append(token)
         return list(reversed(result[1:]))
+    
+
+
+
+
+def word_tokenize(text: str) -> list[str]:
+    """توکنایزر برای استخراج کلمات از متن."""
+    return WordTokenizer().tokenize(text)
 
 
 

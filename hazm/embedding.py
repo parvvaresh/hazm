@@ -18,8 +18,8 @@ from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.test.utils import datapath
 from numpy import ndarray
 
-from hazm import Normalizer
-from hazm import word_tokenize
+from .normalizer import Normalizer
+from .word_tokenizer import word_tokenize
 
 supported_embeddings = ["fasttext", "keyedvector", "glove"]
 

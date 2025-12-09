@@ -7,7 +7,7 @@
 from collections.abc import Iterator
 from pathlib import Path
 
-from hazm.utils import maketrans
+from ..utils import maketrans
 
 buckwalter_transliteration = maketrans(
     "'>&<}AbptvjHxd*rzs$SDTZEg_fqklmnhwYyFNKaui~o^#`{:@\"[;,.!-+%]",

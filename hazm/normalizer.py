@@ -3,10 +3,10 @@
 
 import re
 
-from hazm import Lemmatizer
-from hazm import WordTokenizer
-from hazm import maketrans
-from hazm import regex_replace
+from .lemmatizer import Lemmatizer
+from .word_tokenizer import WordTokenizer
+from .utils import maketrans
+from .utils import regex_replace
 
 
 class Normalizer:

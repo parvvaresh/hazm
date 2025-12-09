@@ -5,7 +5,7 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-from hazm.corpus_readers import DadeganReader
+from .dadegan_reader import DadeganReader
 
 
 def conllu2conll(conllu_path: str) -> str :

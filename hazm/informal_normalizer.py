@@ -4,15 +4,15 @@
 import re
 from pathlib import Path
 
-from hazm import NUMBERS
-from hazm import Lemmatizer
-from hazm import Normalizer
-from hazm import SentenceTokenizer
-from hazm import Stemmer
-from hazm import WordTokenizer
-from hazm import default_verbs
-from hazm import informal_verbs
-from hazm import informal_words
+from .utils import NUMBERS
+from .lemmatizer import Lemmatizer
+from .normalizer import Normalizer
+from .sentence_tokenizer import SentenceTokenizer
+from .stemmer import Stemmer
+from .word_tokenizer import WordTokenizer
+from .utils import default_verbs
+from .utils import informal_verbs
+from .utils import informal_words
 
 
 class InformalNormalizer(Normalizer):
