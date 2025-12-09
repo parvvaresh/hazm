@@ -14,7 +14,6 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from ..normalizer import Normalizer
-
 from .peykare_reader import join_verb_parts
 
 default_pos_map = {

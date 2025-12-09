@@ -371,7 +371,7 @@ class WordTokenizer(TokenizerI):
             else:
                 result.append(token)
         return list(reversed(result[1:]))
-    
+
 
 
 

@@ -1,5 +1,7 @@
 from collections.abc import Callable
+
 import pytest
+
 
 class TestWordTokenizer:
 
@@ -22,7 +24,7 @@ class TestWordTokenizer:
         word_tokenizer.replace_emails = False
         word_tokenizer.replace_numbers = False
         word_tokenizer.replace_hashtags = False
-        
+
         yield word_tokenizer
 
         # بازگرداندن وضعیت به حالت اولیه (Teardown)

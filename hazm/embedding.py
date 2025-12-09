@@ -490,7 +490,7 @@ class SentEmbedding:
         if not self.model:
             msg = "Model must not be None! Please load model first."
             raise AttributeError(msg)
-       
+
         return self.model.similarity_unseen_docs(
             word_tokenize(sent1),
             word_tokenize(sent2),

@@ -19,8 +19,8 @@ from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
-from .sequence_tagger import IOBTagger
 from .pos_tagger import POSTagger
+from .sequence_tagger import IOBTagger
 
 
 def tree2brackets(tree: str) -> str:

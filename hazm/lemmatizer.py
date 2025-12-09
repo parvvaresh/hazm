@@ -13,9 +13,9 @@
 
 
 from .stemmer import Stemmer
-from .word_tokenizer import WordTokenizer
 from .utils import default_verbs
 from .utils import default_words
+from .word_tokenizer import WordTokenizer
 
 
 class Lemmatizer:

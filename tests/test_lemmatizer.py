@@ -11,7 +11,6 @@ class TestLemmatizer:
             ("می‌روم", "رفت#رو"),
             ("گفته_شده_است", "گفت#گو"),
             ("نچشیده_است", "چشید#چش"),
-            ("می‌روم", "رفت#رو"),
         ],
     )
     def test_lemmatize(self: "TestLemmatizer", lemmatizer, word, expected):

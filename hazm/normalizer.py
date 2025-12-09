@@ -4,9 +4,9 @@
 import re
 
 from .lemmatizer import Lemmatizer
-from .word_tokenizer import WordTokenizer
 from .utils import maketrans
 from .utils import regex_replace
+from .word_tokenizer import WordTokenizer
 
 
 class Normalizer:

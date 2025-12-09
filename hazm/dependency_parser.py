@@ -12,7 +12,6 @@ from nltk.parse import DependencyGraph
 from nltk.parse.api import ParserI
 from nltk.parse.malt import MaltParser as NLTKMaltParser
 from spacy.tokens import Doc
-from typing import Type
 
 
 class MaltParser(NLTKMaltParser):
@@ -167,7 +166,7 @@ class TurboParser(ParserI):
     def parse_sents(
         self: "TurboParser",
         sentences: list[list[tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
+    ) -> type[DependencyGraph]:
         """parse_sents."""
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.tagged_parse_sents(tagged_sentences)
@@ -175,7 +174,7 @@ class TurboParser(ParserI):
     def tagged_parse_sents(
         self: "TurboParser",
         sentences: list[list[tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
+    ) -> type[DependencyGraph]:
         """tagged_parse_sents."""
         input_path = ""
         output_path = ""
