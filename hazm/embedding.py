@@ -206,7 +206,7 @@ class WordEmbedding:
             msg = "Model must not be None! Please load model first."
             raise AttributeError(msg)
 
-        return float(str(self.model.similarity(word1, word2)))
+        return self.model.similarity(word1, word2).item()
 
     def nearest_words(
         self: "WordEmbedding",
@@ -425,6 +425,7 @@ class SentEmbedding:
         callbacks = [CallbackSentEmbedding()]
         model.train(doc, total_examples=model.corpus_count, epochs=epochs, callbacks=callbacks)
 
+        # Initializing as empty for reset/cleanup
         model.dv.vectors = np.array([[]])
         self.model = model
         self.__load_word_embedding_model()
@@ -489,15 +490,11 @@ class SentEmbedding:
         if not self.model:
             msg = "Model must not be None! Please load model first."
             raise AttributeError(msg)
-
-        return float(
-            str(
-                self.model.similarity_unseen_docs(
-                    word_tokenize(sent1),
-                    word_tokenize(sent2),
-                ),
-            ),
-        )
+       
+        return self.model.similarity_unseen_docs(
+            word_tokenize(sent1),
+            word_tokenize(sent2),
+        ).item()
 
     def get_vector_size(self: "WordEmbedding") -> int:
         """طول وکتور بیان‌کننده هر جمله در مدل را برمی‌گرداند.
