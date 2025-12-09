@@ -10,31 +10,17 @@
 
 """
 
-
 from nltk.stem.api import StemmerI
+from hazm.constants import SUFFIXES
 
 
 class Stemmer(StemmerI):
     """این کلاس شامل توابعی برای ریشه‌یابی کلمات است."""
 
-    def __init__(self: "Stemmer") -> None:
-        self.ends = [
-            "ات",
-            "ان",
-            "ترین",
-            "تر",
-            "م",
-            "ت",
-            "ش",
-            "یی",
-            "ی",
-            "ها",
-            "ٔ",
-            "‌ا",
-            "‌",
-        ]
+    def __init__(self) -> None:
+        self.ends = sorted(list(SUFFIXES | {"ٔ", "‌ا", "‌"}), key=len, reverse=True)
 
-    def stem(self: "Stemmer", word: str) -> str:
+    def stem(self, word: str) -> str:
         """ریشهٔ کلمه را پیدا می‌کند.
 
         Examples:
@@ -62,7 +48,7 @@ class Stemmer(StemmerI):
         for end in self.ends:
             if word.endswith(end):
                 word = word[:-len(end)]
-
+        
         if word.endswith("ۀ"):
             word = word[:-1] + "ه"
 
