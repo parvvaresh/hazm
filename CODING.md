@@ -7,9 +7,8 @@
 - Use type hints for parameters and return values. Built-in types like `str` and `float` can be used directly and specific types like `Dict` and `List` need to be imported from the `typing` module:
 
 ```py
-from typing import Dict
 
-def count_letters(word: str) -> Dict[str, int]:
+def count_letters(word: str) -> dict[str, int]:
     ...
 ```
 

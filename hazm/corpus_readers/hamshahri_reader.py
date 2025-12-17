@@ -16,9 +16,8 @@ crawl
 import os
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
 from xml.dom import minidom
 
 
@@ -80,7 +79,7 @@ class HamshahriReader:
         }
         self._paragraph_pattern = re.compile(r"(\n.{0,50})(?=\n)")
 
-    def docs(self: "HamshahriReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "HamshahriReader") -> Iterator[dict[str, str]]:
         """خبرها را برمی‌گرداند.
 
         هر خبر، شی‌ای متشکل از این پارامتر است:

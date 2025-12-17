@@ -10,9 +10,8 @@
 داده‌کاوی است.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
 
 
 class PersicaReader:
@@ -26,7 +25,7 @@ class PersicaReader:
     def __init__(self: "PersicaReader", csv_file: str) -> None:
         self._csv_file = csv_file
 
-    def docs(self: "PersicaReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "PersicaReader") -> Iterator[dict[str, str]]:
         """خبرها را برمی‌گرداند.
 
         هر خبر، شی‌ای متشکل از این پارامتر است:
@@ -49,23 +48,24 @@ class PersicaReader:
 
         """
         lines = []
-        for current_line in Path(self._csv_file).open(encoding="utf-8-sig"):
-            current_line = current_line.strip()
-            if current_line:
-                if current_line.endswith(","):
-                    lines.append(current_line[:-1])
-                else:
-                    lines.append(current_line)
-                    yield {
-                        "id": int(lines[0]),
-                        "title": lines[1],
-                        "text": lines[2],
-                        "date": lines[3],
-                        "time": lines[4],
-                        "category": lines[5],
-                        "category2": lines[6],
-                    }
-                    lines = []
+        with Path(self._csv_file).open(encoding="utf-8-sig") as file:
+            for current_line in file:
+                current_line = current_line.strip()
+                if current_line:
+                    if current_line.endswith(","):
+                        lines.append(current_line[:-1])
+                    else:
+                        lines.append(current_line)
+                        yield {
+                            "id": int(lines[0]),
+                            "title": lines[1],
+                            "text": lines[2],
+                            "date": lines[3],
+                            "time": lines[4],
+                            "category": lines[5],
+                            "category2": lines[6],
+                        }
+                        lines = []
 
     def texts(self: "PersicaReader") -> Iterator[str]:
         """فقط متن خبرها را برمی‌گرداند.

@@ -4,10 +4,9 @@
 import os
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
 from xml.dom import minidom
 
 
@@ -23,7 +22,7 @@ class TNewsReader:
         self._root = root
         self.cleaner = re.compile(r"<[^<>]+>")
 
-    def docs(self: "TNewsReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "TNewsReader") -> Iterator[dict[str, str]]:
         """خبرها را در قالب یک `iterator` برمی‌گرداند.
 
         هر خبر، شی‌ای متشکل از چند پارامتر است:
@@ -44,7 +43,7 @@ class TNewsReader:
             '14092303482300013653'
 
         Yields:
-            (Dict): خبر بعدی.
+            (dict): خبر بعدی.
 
         """
 

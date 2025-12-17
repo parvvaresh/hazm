@@ -3,10 +3,8 @@
 پیکرهٔ [pn-summary](https://github.com/hooshvare/pn-summary) با هدف کمک به سیستم‌های یادگیری عمیق و ساخت مدل‌های بهتر برای خلاصه‌سازی دقیق‌تر متن‌های فارسی تهیه شده است. این پیکره شامل ۹۳,۲۰۷ متن خبری تمیزشده است که از ۶ خبرگزاری فارسی و از میان حدوداً ۲۰۰ هزار خبر استخراج شده است.
 """
 import csv
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
 
 class PnSummaryReader:
@@ -20,7 +18,7 @@ class PnSummaryReader:
     def __init__(self: "PnSummaryReader", corpus_folder: str, subset: str="train") -> None:
         self._file_paths=Path(corpus_folder).glob(f"{subset}*.csv")
 
-    def docs(self: "PnSummaryReader") -> Iterator[Tuple[str, str, str, str, str, List[str], str, str]]:
+    def docs(self: "PnSummaryReader") -> Iterator[tuple[str, str, str, str, str, list[str], str, str]]:
         """خبرها را یک‌به‌یک برمی‌گرداند.
 
         Examples:

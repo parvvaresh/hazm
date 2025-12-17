@@ -1,85 +1,78 @@
-# ruff: noqa
-"""entry point for the package."""
 
-from typing import List
+# Base modules (No internal dependencies)
+from .api import LemmatizerProtocol
 
-from hazm.utils import default_verbs
-from hazm.utils import default_words
-from hazm.utils import stopwords_list
-from hazm.utils import words_list
-from hazm.utils import maketrans
-from hazm.utils import regex_replace
-from hazm.utils import words_list
-from hazm.utils import NUMBERS
-from hazm.utils import informal_verbs
-from hazm.utils import informal_words
-from hazm.utils import abbreviations
+# API Protocols
+from .api import NormalizerProtocol
+from .api import TaggerProtocol
+from .api import TokenizerProtocol
+from .chunker import Chunker
+from .chunker import RuleBasedChunker
+from .chunker import SpacyChunker
+from .chunker import tree2brackets
+from .constants import *
+from .dependency_parser import MaltParser
+from .embedding import SentEmbedding
 
-from hazm.sequence_tagger import IOBTagger
-from hazm.sequence_tagger import SequenceTagger
+# Embeddings
+from .embedding import WordEmbedding
+from .informal_normalizer import InformalNormalizer
+from .lemmatizer import Conjugation
 
-from hazm.pos_tagger import POSTagger
+# Level 2 modules (depend on word_tokenizer, stemmer)
+from .lemmatizer import Lemmatizer
+from .normalizer import Normalizer
+from .pos_tagger import POSTagger
+from .pos_tagger import SpacyPOSTagger
+from .pos_tagger import StanfordPOSTagger
 
-from hazm.stemmer import Stemmer
-from hazm.word_tokenizer import WordTokenizer
+# Low-level modules
+from .sentence_tokenizer import SentenceTokenizer
+from .sentence_tokenizer import sent_tokenize
+from .sequence_tagger import IOBTagger
 
-from hazm.lemmatizer import Conjugation
-from hazm.lemmatizer import Lemmatizer
+# Taggers and Parsers
+from .sequence_tagger import SequenceTagger
+from .stemmer import Stemmer
 
-from hazm.normalizer import Normalizer
+# Level 3 modules (depend on lemmatizer, normalizer)
+from .token_splitter import TokenSplitter
+from .types import ChunkedSentence
+from .types import ChunkedToken
+from .types import IOBTag
+from .types import Sentence
+from .types import Tag
+from .types import TaggedSentence
+from .types import TaggedToken
+from .types import Token
+from .utils import *
 
-from hazm.chunker import Chunker
-from hazm.chunker import RuleBasedChunker
-from hazm.chunker import tree2brackets
+# Level 1 modules (depend on utils, constants, api)
+from .word_tokenizer import WordTokenizer
+from .word_tokenizer import word_tokenize
 
-from hazm.sentence_tokenizer import SentenceTokenizer
-
-def sent_tokenize(text: str) -> List[str]:
-    """Sentence Tokenizer."""
-    if not hasattr(sent_tokenize, "tokenizer"):
-        sent_tokenize.tokenizer = SentenceTokenizer()
-    return sent_tokenize.tokenizer.tokenize(text)
+# Alias for backward compatibility
+DependencyParser = MaltParser
 
 
-def word_tokenize(sentence: str) -> List[str]:
-    """Word Tokenizer."""
-    if not hasattr(word_tokenize, "tokenizer"):
-        word_tokenize.tokenizer = WordTokenizer()
-    return word_tokenize.tokenizer.tokenize(sentence)
-
-from hazm.corpus_readers import PeykareReader
+from hazm.corpus_readers import ArmanReader
 from hazm.corpus_readers import BijankhanReader
 from hazm.corpus_readers import DadeganReader
-from hazm.corpus_readers import UniversalDadeganReader
 from hazm.corpus_readers import DegarbayanReader
+from hazm.corpus_readers import FaSpellReader
 from hazm.corpus_readers import HamshahriReader
 from hazm.corpus_readers import MirasTextReader
+from hazm.corpus_readers import MizanReader
+from hazm.corpus_readers import NaabReader
+from hazm.corpus_readers import NerReader
+from hazm.corpus_readers import PersianPlainTextReader
 from hazm.corpus_readers import PersicaReader
+from hazm.corpus_readers import PeykareReader
+from hazm.corpus_readers import PnSummaryReader
 from hazm.corpus_readers import QuranReader
 from hazm.corpus_readers import SentiPersReader
 from hazm.corpus_readers import TNewsReader
 from hazm.corpus_readers import TreebankReader
+from hazm.corpus_readers import UniversalDadeganReader
 from hazm.corpus_readers import VerbValencyReader
-from hazm.corpus_readers import PersianPlainTextReader
 from hazm.corpus_readers import WikipediaReader
-from hazm.corpus_readers import MizanReader
-from hazm.corpus_readers import NerReader
-from hazm.corpus_readers import NaabReader
-from hazm.corpus_readers import ArmanReader
-from hazm.corpus_readers import FaSpellReader
-from hazm.corpus_readers import PnSummaryReader
-
-
-from hazm.dependency_parser import DependencyParser
-from hazm.dependency_parser import MaltParser
-from hazm.dependency_parser import TurboParser
-
-from hazm.embedding import SentEmbedding
-from hazm.embedding import WordEmbedding
-
-from hazm.informal_normalizer import InformalLemmatizer
-from hazm.informal_normalizer import InformalNormalizer
-
-from hazm.token_splitter import TokenSplitter
-
-

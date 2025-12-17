@@ -15,11 +15,9 @@
 
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import Tuple
 from xml.dom import minidom
 
 
@@ -46,10 +44,10 @@ class DegarbayanReader:
         self._root = root
         self._corpus_file = corpus_file
         self._judge_type = judge_type
-        if judge_type != "three_class" and judge_type != "two_class":
+        if judge_type not in {"three_class", "two_class"}:
             self._judge_type = "three_class"
 
-    def docs(self: "DegarbayanReader") -> Iterator[Dict[str, Any]]:
+    def docs(self: "DegarbayanReader") -> Iterator[dict[str, Any]]:
         """اسناد موجود در پیکره را برمی‌گرداند.
 
         Yields:
@@ -127,7 +125,7 @@ class DegarbayanReader:
             msg = "error in reading file"
             raise FileNotFoundError(msg, filename)
 
-    def pairs(self: "DegarbayanReader") -> Iterator[Tuple[str, str, str]]:
+    def pairs(self: "DegarbayanReader") -> Iterator[tuple[str, str, str]]:
         """متن‌های دگربیان را در قالب یک `(متن اصلی، شکل دگربیان، برچسب)` برمی‌گرداند.
 
         Examples:

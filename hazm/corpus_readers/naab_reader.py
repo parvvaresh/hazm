@@ -3,8 +3,8 @@
 [پیکرهٔ ناب](https://huggingface.co/datasets/SLPL/naab/) متشکل از ۱۳۰ گیگابایت متن تمیزشدهٔ فارسی متشکل از ۲۵۰ میلیون پاراگراف و ۱۵ میلیارد کلمه است.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class NaabReader:

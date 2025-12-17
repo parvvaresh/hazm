@@ -7,21 +7,18 @@
 
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Tuple
 from xml.dom import minidom
 from xml.dom.minidom import Node
 
 from nltk.tree import Tree
 
-from hazm import WordTokenizer
+from ..word_tokenizer import WordTokenizer
 
 
-def coarse_pos_e(tags: List[str]) -> List[str]:
+def coarse_pos_e(tags: list[str]) -> list[str]:
     """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
 
     Examples:
@@ -167,8 +164,8 @@ class TreebankReader:
                     pos.append(w.getAttribute("kind"))
                 return pos
 
-            def clitic_join(tree: Tree, clitic: Dict):
-                if type(tree[-1]) == Tree:
+            def clitic_join(tree: Tree, clitic: dict):
+                if isinstance(tree[-1], Tree):
                     return clitic_join(tree[-1], clitic)
 
                 if clitic[0][0][0] == "ا":
@@ -199,7 +196,7 @@ class TreebankReader:
             if (
                 self._join_clitics
                 and len(tree) > 1
-                and type(tree[1]) == Tree
+                and isinstance(tree[1], Tree)
                 and tree[1].label() == "CLITIC"
                 and tree[1][0][1] not in {"P", "V"}
             ):
@@ -209,8 +206,8 @@ class TreebankReader:
             if (
                 self._join_verb_parts
                 and len(tree) > 1
-                and type(tree[1]) == Tree
-                and type(tree[0]) == Tree
+                and isinstance(tree[1], Tree)
+                and isinstance(tree[0], Tree)
                 and tree[0].label() == "AUX"
                 and tree[0][0][0] in self._tokenizer.before_verbs
             ):
@@ -255,7 +252,7 @@ class TreebankReader:
                 traverse(s)
                 yield traverse(s)
 
-    def sents(self: "TreebankReader") -> Iterator[List[Tuple[str, str]]]:
+    def sents(self: "TreebankReader") -> Iterator[list[tuple[str, str]]]:
         """جملات را به شکل مجموعه‌ای از `(توکن،برچسب)`ها برمی‌گرداند.
 
         Examples:
@@ -361,20 +358,20 @@ class TreebankReader:
                 label == "NPA"
                 and len(node) >= 2
                 and (
-                    node[0].label() == "ADJ"
-                    and node[1].label() == "NPC"
-                    or node[0].label() in {"N", "PRON"}
-                    and node[1].label() in {"ADJ", "ADJPA", "N"}
-                    or node[0].label() == "NUM"
-                    and node[1].label() in {"N", "NPC", "MN", "NUM"}
-                    or node[0].label() in {"N", "NPC", "MN"}
-                    and node[1].label() == "NUM"
-                    or node[0].label() == "NPC"
-                    and node[1].label() == "ADJ"
-                    or node[0].label() == "NPA"
-                    and node[1].label() != "NPC"
-                    or node[1].label() == "NPA"
-                    and node[0].label() != "NPC"
+                    (node[0].label() == "ADJ"
+                    and node[1].label() == "NPC")
+                    or (node[0].label() in {"N", "PRON"}
+                    and node[1].label() in {"ADJ", "ADJPA", "N"})
+                    or (node[0].label() == "NUM"
+                    and node[1].label() in {"N", "NPC", "MN", "NUM"})
+                    or (node[0].label() in {"N", "NPC", "MN"}
+                    and node[1].label() == "NUM")
+                    or (node[0].label() == "NPC"
+                    and node[1].label() == "ADJ")
+                    or (node[0].label() == "NPA"
+                    and node[1].label() != "NPC")
+                    or (node[1].label() == "NPA"
+                    and node[0].label() != "NPC")
                 )
             ):
                 chunks.append(collapse(node, "NP"))
@@ -405,7 +402,7 @@ class TreebankReader:
                 chunks.append(Tree("ADVP", [node]))
                 return
 
-            if type(node[0]) != Tree:
+            if not isinstance(tree[0], Tree):
                 chunks.append(node)
                 return
 

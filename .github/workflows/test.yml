@@ -10,17 +10,17 @@ on:
 
 jobs:
     build:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-24.04
         strategy:
             matrix:
-                python-versions: ["3.8", "3.9", "3.10", "3.11"]               
+                python-versions: ["3.12", "3.13"]               
 
         steps:
             - name: Checkout master
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Install Python ${{ matrix.python-versions }}
-              uses: actions/setup-python@v4
+              uses: actions/setup-python@v6
               with:
                   python-version: ${{ matrix.python-versions }}
 
@@ -32,7 +32,7 @@ jobs:
                 poetry lock
                 poetry install --with dev            
 
-            - uses: actions/setup-java@v3
+            - uses: actions/setup-java@v5
               with:
                 distribution: 'oracle'
                 java-version: '17'

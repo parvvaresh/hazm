@@ -1,29 +1,38 @@
-import subprocess
 import random
+import subprocess
 from collections import Counter
 from itertools import islice
+from pathlib import Path
 
 from nltk.tag import untag
 from sklearn.model_selection import train_test_split
 
-from hazm import (Chunker, InformalNormalizer, Lemmatizer, Normalizer,
-                  POSTagger, sent_tokenize)
+from hazm import sent_tokenize
+from hazm.chunker import Chunker
 from hazm.chunker import tree2brackets
-from hazm.corpus_readers import (DadeganReader, PeykareReader, SentiPersReader,
-                                 TNewsReader, TreebankReader)
-from hazm.corpus_readers.peykare_reader import \
-    coarse_pos_e as peykare_coarse_pos_e
-from hazm.dependency_parser import MaltParser, TurboParser
+from hazm.corpus_readers import DadeganReader
+from hazm.corpus_readers import PeykareReader
+from hazm.corpus_readers import SentiPersReader
+from hazm.corpus_readers import TNewsReader
+from hazm.corpus_readers import TreebankReader
+from hazm.corpus_readers.peykare_reader import coarse_pos_e as peykare_coarse_pos_e
+from hazm.dependency_parser import MaltParser
+from hazm.dependency_parser import TurboParser
+from hazm.informal_normalizer import InformalNormalizer
+from hazm.lemmatizer import Lemmatizer
+from hazm.normalizer import Normalizer
+from hazm.pos_tagger import POSTagger
 
 
 def create_words_file(dic_file="tests/files/persian.dic", output="hazm/data/words.dat"):
-    """prepares list of persian word words from [Virastyar](https://sourceforge.net/projects/virastyar/) dic file."""
+    """Prepares list of persian word words from [Virastyar](https://sourceforge.net/projects/virastyar/) dic file."""
+    dic_words = []
+    with Path(dic_file).open(encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().replace(", ", ",").split("\t")
+            if len(parts) == 3:
+                dic_words.append(parts)
 
-    dic_words = [
-        line.strip().replace(", ", ",").split("\t")
-        for line in open(dic_file, encoding="utf-8")
-        if len(line.strip().split("\t")) == 3
-    ]
     dic_words = [
         item
         for item in dic_words
@@ -32,17 +41,18 @@ def create_words_file(dic_file="tests/files/persian.dic", output="hazm/data/word
     dic_words = [
         "\t".join(item) for item in sorted(dic_words, key=lambda item: item[0])
     ]
-    print(*dic_words, sep="\n", file=open(output, "w", "utf-8"))
+    with Path(output).open("w", "utf-8") as f:
+        print(*dic_words, sep="\n", file=f)
     print(output, "created")
 
 
 def evaluate_lemmatizer(
-    conll_file="tests/files/train.conll", peykare_root="tests/files/peykare"
+    conll_file="tests/files/train.conll", peykare_root="tests/files/peykare",
 ):
     lemmatizer = Lemmatizer()
 
     errors = []
-    with open("tests/files/lemmatizer_errors.txt", "w", "utf8") as output:
+    with Path("tests/files/lemmatizer_errors.txt").open("w", "utf8") as output:
         dadegan = DadeganReader(conll_file)
         for tree in dadegan.trees():
             for node in tree.nodelist[1:]:
@@ -52,12 +62,12 @@ def evaluate_lemmatizer(
         print(len(errors), "errors", file=output)
         counter = Counter(errors)
         for item, count in sorted(
-            list(counter.items()), key=lambda t: t[1], reverse=True
+            counter.items(), key=lambda t: t[1], reverse=True,
         ):
             print(count, *item, file=output)
 
     missed = []
-    with open("tests/files/lemmatizer_missed.txt", "w", "utf8") as output:
+    with Path("tests/files/lemmatizer_missed.txt").open("w", "utf8") as output:
         peykare = PeykareReader(peykare_root)
         for sentence in peykare.sents():
             for word in sentence:
@@ -67,7 +77,7 @@ def evaluate_lemmatizer(
         print(len(missed), "missed", file=output)
         counter = Counter(missed)
         for item, count in sorted(
-            list(counter.items()), key=lambda t: t[1], reverse=True
+            counter.items(), key=lambda t: t[1], reverse=True,
         ):
             print(count, item, file=output)
 
@@ -89,9 +99,7 @@ def evaluate_normalizer(tnews_root="tests/files/tnews"):
         affix_spacing=False,
     )
 
-    with open("tests/files/normalized.txt", "w", "utf8") as output1, open(
-        "tests/files/normalized_token_based.txt", "w", "utf8"
-    ) as output2:
+    with Path("tests/files/normalized.txt").open("w", "utf8") as output1, Path("tests/files/normalized_token_based.txt").open("w", "utf8") as output2:
         random.seed(0)
         for text in tnews.texts():
             if random.randint(0, 100) != 0:
@@ -107,7 +115,8 @@ def evaluate_informal_normalizer(sentipars_root="tests/files/sentipers"):
     normalizer = Normalizer()
     informal_normalizer = InformalNormalizer()
 
-    output = open("tests/files/normalized.txt", "w", "utf8")
+    with Path("tests/files/normalized.txt").open("w", "utf8") as f:
+        output = f
     for comments in sentipers.comments():
         for comment in comments:
             for sentence in comment:
@@ -128,8 +137,9 @@ def evaluate_chunker(treebank_root="tests/files/treebank"):
 
     print(chunker.evaluate(chunked_trees))
 
-    output = open("tests/files/chunker_errors.txt", "w", "utf8")
-    for sentence, gold in zip(treebank.sents(), chunked_trees):
+    with Path("tests/files/chunker_errors.txt").open("w", "utf8") as f:
+        output = f
+    for sentence, gold in zip(treebank.sents(), chunked_trees, strict=False):
         chunked = chunker.parse(sentence)
         if chunked != gold:
             print(tree2brackets(chunked), file=output)
@@ -176,7 +186,7 @@ def train_postagger(
 
     peykare = PeykareReader(peykare_root, pos_map=pos_map)
     train_sents, test_sents = train_test_split(
-        list(islice(peykare.sents(), sents_limit)), test_size=test_size, random_state=0
+        list(islice(peykare.sents(), sents_limit)), test_size=test_size, random_state=0,
     )
 
     tagger.train(train_sents)
@@ -212,8 +222,8 @@ def train_chunker(
     )
 
     def retag_trees(trees, sents):
-        for tree, sentence in zip(trees, tagger.tag_sents(list(map(untag, sents)))):
-            for n, word in zip(tree.treepositions("leaves"), sentence):
+        for tree, sentence in zip(trees, tagger.tag_sents(list(map(untag, sents))), strict=False):
+            for n, word in zip(tree.treepositions("leaves"), sentence, strict=False):
                 tree[n] = word
 
     train, test = DadeganReader(train_file), DadeganReader(test_file)
@@ -242,12 +252,12 @@ def train_maltparser(
 
     train, test = DadeganReader(train_file), DadeganReader(test_file)
     train_data = train_file + ".data"
-    with open(train_data, "w", encoding="utf8") as output:
+    with Path(train_data).open("w", encoding="utf8") as output:
         for tree, sentence in zip(
-            train.trees(), tagger.tag_sents(list(map(untag, train.sents())))
+            train.trees(), tagger.tag_sents(list(map(untag, train.sents()))), strict=False,
         ):
             for i, (node, word) in enumerate(
-                zip(list(tree.nodes.values())[1:], sentence), start=1
+                zip(list(tree.nodes.values())[1:], sentence, strict=False), start=1,
             ):
                 node["mtag"] = word[1]
                 node["lemma"] = lemmatizer.lemmatize(node["word"], node["mtag"])
@@ -286,7 +296,7 @@ def train_maltparser(
             features_file,
             "-m",
             "learn",
-        ]
+        ],
     ).wait()
 
     # evaluation
@@ -294,16 +304,19 @@ def train_maltparser(
     parsed_trees = parser.parse_sents(list(map(untag, test.sents())))
 
     test_data, test_results = test_file + ".data", test_file + ".results"
-    print(
-        "\n".join([tree.to_conll(10) for tree in test.trees()]).strip(),
-        file=open(test_data, "w", encoding="utf8"),
-    )
-    print(
-        "\n".join([tree.to_conll(10) for tree in parsed_trees]).strip(),
-        file=open(test_results, "w", encoding="utf8"),
-    )
+
+    with Path(test_data).open("w", encoding="utf8") as f:
+        print(
+            "\n".join([tree.to_conll(10) for tree in test.trees()]).strip(),
+            file=f,
+        )
+    with Path(test_results).open("w", encoding="utf8") as f:
+        print(
+            "\n".join([tree.to_conll(10) for tree in parsed_trees]).strip(),
+            file=f,
+        )
     subprocess.Popen(
-        ["java", "-jar", "tests/files/MaltEval.jar", "-g", test_data, "-s", test_results]
+        ["java", "-jar", "tests/files/MaltEval.jar", "-g", test_data, "-s", test_results],
     ).wait()
 
 
@@ -317,12 +330,12 @@ def train_turboparser(
 
     train, test = DadeganReader(train_file), DadeganReader(test_file)
     train_data = train_file + ".data"
-    with open(train_data, "w", "utf8") as output:
+    with Path(train_data).open("w", "utf8") as output:
         for tree, sentence in zip(
-            train.trees(), tagger.tag_sents(list(map(untag, train.sents())))
+            train.trees(), tagger.tag_sents(list(map(untag, train.sents()))), strict=False,
         ):
             for i, (node, word) in enumerate(
-                zip(list(tree.nodes.values())[1:], sentence), start=1
+                zip(list(tree.nodes.values())[1:], sentence, strict=False), start=1,
             ):
                 node["mtag"] = word[1]
                 node["lemma"] = lemmatizer.lemmatize(node["word"], node["mtag"])
@@ -349,7 +362,7 @@ def train_turboparser(
             "--file_train=" + train_data,
             "--file_model=" + model_file,
             "--logtostderr",
-        ]
+        ],
     ).wait()
 
     # evaluation
@@ -357,14 +370,18 @@ def train_turboparser(
     parsed_trees = parser.parse_sents(list(map(untag, test.sents())))
 
     test_data, test_results = test_file + ".data", test_file + ".results"
-    print(
-        "\n".join([tree.to_conll(10) for tree in test.trees()]).strip(),
-        file=open(test_data, "w", "utf8"),
-    )
-    print(
-        "\n".join([tree.to_conll(10) for tree in parsed_trees]).strip(),
-        file=open(test_results, "w", "utf8"),
-    )
+
+    with Path(test_data).open("w", "utf8") as f:
+        print(
+            "\n".join([tree.to_conll(10) for tree in test.trees()]).strip(),
+            file=f,
+        )
+
+    with Path(test_results).open("w", "utf8") as f:
+        print(
+            "\n".join([tree.to_conll(10) for tree in parsed_trees]).strip(),
+            file=f,
+        )
     subprocess.Popen(
         [
             "java",
@@ -378,6 +395,6 @@ def train_turboparser(
             "0.####",
             "--Metric",
             "LAS;UAS",
-        ]
+        ],
     ).wait()
-    
+

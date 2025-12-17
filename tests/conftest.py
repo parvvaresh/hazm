@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from hazm import Chunker
@@ -14,6 +16,9 @@ from hazm import TokenSplitter
 from hazm import WordEmbedding
 from hazm import WordTokenizer
 
+# تعریف مسیر پایه بر اساس مکان فایل conftest.py
+BASE_DIR = Path(__file__).parent
+FILES_DIR = BASE_DIR / "files"
 
 @pytest.fixture(scope="session")
 def stemmer():
@@ -41,11 +46,11 @@ def conjugation():
 
 @pytest.fixture(scope="session")
 def pos_tagger():
-    return POSTagger(model="tests/files/pos_tagger.model")
+    return POSTagger(model=str(FILES_DIR / "pos_tagger.model"))
 
 @pytest.fixture(scope="session")
 def universal_pos_tagger():
-    return POSTagger(model="tests/files/pos_tagger.model",universal_tag=True)
+    return POSTagger(model=str(FILES_DIR / "pos_tagger.model"), universal_tag=True)
 
 @pytest.fixture(scope="session")
 def token_splitter():
@@ -53,11 +58,11 @@ def token_splitter():
 
 @pytest.fixture(scope="session")
 def dependency_parser(pos_tagger, lemmatizer):
-    return DependencyParser(tagger=pos_tagger, lemmatizer=lemmatizer, working_dir="tests/files/dependency_parser")
+    return DependencyParser(tagger=pos_tagger, lemmatizer=lemmatizer, working_dir=str(FILES_DIR / "dependency_parser"))
 
 @pytest.fixture(scope="session")
 def chunker():
-    return Chunker(model="tests/files/chunker.model")
+    return Chunker(model=str(FILES_DIR / "chunker.model"))
 
 @pytest.fixture(scope="session")
 def rull_based_chunker():
@@ -65,12 +70,9 @@ def rull_based_chunker():
 
 @pytest.fixture(scope="session")
 def word_embedding():
-    word_embedding=WordEmbedding(model_type = "fasttext")
-    word_embedding.load_model("tests/files/light_word2vec.bin")
-    return word_embedding
+    return WordEmbedding.load(model_path=str(FILES_DIR / "light_word2vec.bin"), model_type="fasttext")
 
 @pytest.fixture(scope="session")
 def sent_embedding():
-    sent_embedding = SentEmbedding()
-    sent_embedding.load_model("tests/files/light_sent2vec.model")
-    return sent_embedding
+    return SentEmbedding.load(model_path=str(FILES_DIR / "light_sent2vec.model"))
+

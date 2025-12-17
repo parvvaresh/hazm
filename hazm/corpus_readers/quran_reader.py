@@ -4,13 +4,10 @@
 ریخت‌شناسی تک‌تک کلمات قرآن کریم است.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
-from hazm.utils import maketrans
+from ..utils import maketrans
 
 buckwalter_transliteration = maketrans(
     "'>&<}AbptvjHxd*rzs$SDTZEg_fqklmnhwYyFNKaui~o^#`{:@\"[;,.!-+%]",
@@ -29,7 +26,7 @@ class QuranReader:
     def __init__(self: "QuranReader", quran_file: str) -> None:
         self._quran_file = quran_file
 
-    def parts(self: "QuranReader") -> Iterator[Dict[str, str]]:
+    def parts(self: "QuranReader") -> Iterator[dict[str, str]]:
         """اجزای متن قرآن را به‌همراه اطلاعات نحوی‌شان برمی‌گرداند.
 
         یک جزء لزوماً یک کلمه نیست؛ مثلاً واژهٔ «الرحمن» از دو جزء «ال» و «رحمن» تشکیل
@@ -48,28 +45,30 @@ class QuranReader:
             جزء بعدی متن قرآن.
 
         """
-        for line in Path(self._quran_file).open(encoding="utf8"):
-            if not line.startswith("("):
-                continue
-            parts = line.strip().split("\t")
+        with Path(self._quran_file).open(encoding="utf8") as file:
+            for line in file:
+                if not line.startswith("("):
+                    continue
+                parts = line.strip().split("\t")
 
-            part = {
-                "loc": eval(parts[0].replace(":", ",")), # noqa: PGH001
-                "text": parts[1].translate(buckwalter_transliteration),
-                "tag": parts[2],
-            }
+                part = {
+                    "loc": eval(parts[0].replace(":", ",")),
+                    "text": parts[1].translate(buckwalter_transliteration),
+                    "tag": parts[2],
+                }
 
-            features = parts[3].split("|")
-            for feature in features:
-                if feature.startswith("LEM:"):
-                    part["lem"] = feature[4:].translate(buckwalter_transliteration)
-                elif feature.startswith("ROOT:"):
-                    part["root"] = feature[5:].translate(buckwalter_transliteration)
-            yield part
+                features = parts[3].split("|")
+                for feature in features:
+                    if feature.startswith("LEM:"):
+                        part["lem"] = feature[4:].translate(buckwalter_transliteration)
+                    elif feature.startswith("ROOT:"):
+                        part["root"] = feature[5:].translate(buckwalter_transliteration)
+                yield part
+
 
     def words(
         self: "QuranReader",
-    ) -> Iterator[Tuple[str, str, str, str, str, List[Dict[str, str]]]]:
+    ) -> Iterator[tuple[str, str, str, str, str, list[dict[str, str]]]]:
         """اطلاعات صرفی کلمات قرآن را برمی‌گرداند.
 
         Examples:
@@ -82,7 +81,7 @@ class QuranReader:
 
         """
 
-        def word_item(location: Tuple[int], parts: List[Dict]) -> str:
+        def word_item(location: tuple[int], parts: list[dict]) -> str:
             text = "".join([part["text"] for part in parts])
             tag = "-".join([part["tag"] for part in parts])
             lem = "-".join([part["lem"] for part in parts if "lem" in part])

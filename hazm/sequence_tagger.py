@@ -1,34 +1,43 @@
 """این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
 
+import logging
 import time
-from typing import List
-from typing import Tuple
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 from pycrfsuite import Tagger
 from pycrfsuite import Trainer
 from sklearn.metrics import accuracy_score
 
+from hazm.types import ChunkedSentence
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
+from hazm.types import Token
 
-def features(sent, index):
+logger = logging.getLogger(__name__)
+
+
+def features(sent: list[Token], index: int) -> dict[str, Any]:
     """فهرست فیچرها را برمی‌گرداند."""
     return {
         "word": sent[index],
         "is_first": index == 0,
-        "is_last": index == len(sent),
+        "is_last": index == len(sent) - 1,
         "is_num": sent[index].isdigit(),
         "prev_word": sent[index - 1] if index != 0 else "",
         "next_word": sent[index + 1] if index != len(sent) - 1 else "",
     }
 
 
-def data_maker(tokens):
-    """تابع دیتا میکر."""
+def data_maker(tokens: list[Sentence]) -> list[list[dict[str, Any]]]:
+    """تابع دیتا میکر پیش‌فرض."""
     return [[features(sent, index) for index in range(len(sent))] for sent in tokens]
 
 
-def iob_features(words, pos_tags, index):
-    """تابع iob_features."""
+def iob_features(words: list[str], pos_tags: list[str], index: int) -> dict[str, Any]:
+    """ویژگی‌های IOB را برمی‌گرداند (شامل تگ‌های POS)."""
     word_features = features(words, index)
     word_features.update(
         {
@@ -40,48 +49,86 @@ def iob_features(words, pos_tags, index):
     return word_features
 
 
-def iob_data_maker(tokens):
-    """تابع iob_data_maker."""
+def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
+    """تابع دیتا میکر مخصوص IOB (چون ورودی شامل POS Tag است)."""
     words = [[word for word, _ in token] for token in tokens]
     tags = [[tag for _, tag in token] for token in tokens]
     return [
         [
-            iob_features(words=word_tokens, pos_taggs=tag_tokens, index=index)
+            iob_features(words=word_tokens, pos_tags=tag_tokens, index=index)
             for index in range(len(word_tokens))
         ]
-        for word_tokens, tag_tokens in zip(words, tags)
+        for word_tokens, tag_tokens in zip(words, tags, strict=False)
     ]
 
 
 class SequenceTagger:
-    """این کلاس شامل توابعی برای برچسب‌گذاری توکن‌ها است. این کلاس در نقش یک
-    wrapper برای کتابخانهٔ [python-crfsuite](https://python-crfsuite.readthedocs.io/en/latest/) است.
+    """کلاس پایه برای برچسب‌گذاری توکن‌ها با استفاده از CRFSuite."""
 
-    Args:
-        model (str, optional): مسیر فایل tagger.
-        data_maker (function, optional): تابعی که لیستی دو بعدی از کلمات توکنایز شده را گرفته و لیست دو بعدی از از دیکشنری‌هایی که تعیین‌کننده ویژگی‌ها هر کلمه هستند را برمی‌گرداند.
-    """
-
-    def __init__(self: "SequenceTagger", model=None, data_maker=data_maker) -> None:
+    def __init__(
+        self,
+        model: str | Path | None = None,
+        data_maker: Callable = data_maker,
+    ) -> None:
+        self.model: Tagger | None = None
         if model is not None:
             self.load_model(model)
-        else:
-            self.model = None
         self.data_maker = data_maker
 
-    def __add_label(self: "SequenceTagger", sentence, tags):
-        return [(word, tag) for word, tag in zip(sentence, tags)]
+    def load_model(self, model_path: str | Path) -> None:
+        """فایل تگر را بارگزاری می‌کند."""
+        tagger = Tagger()
+        tagger.open(str(model_path))
+        self.model = tagger
 
-    def __tag(self: "SequenceTagger", tokens):
-        return self.__add_label(tokens, self.model.tag(self.data_maker([tokens])[0]))
+    def tag(self, tokens: Sentence) -> TaggedSentence:
+        """یک جمله را برچسب‌گذاری می‌کند."""
+        if self.model is None:
+            msg = "Model is not loaded."
+            raise ValueError(msg)
 
-    def __train(
-        self: "SequenceTagger", x, y, args, verbose, file_name, report_duration,
-    ):
+        features_list = self.data_maker([tokens])[0]
+        tags = self.model.tag(features_list)
+
+        return list(zip(tokens, tags, strict=False))
+
+    def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
+        """لیستی از جملات را برچسب‌گذاری می‌کند."""
+        if self.model is None:
+            msg = "Model is not loaded."
+            raise ValueError(msg)
+
+        features_lists = self.data_maker(sentences)
+        results = []
+        for tokens, feats in zip(sentences, features_lists, strict=False):
+            tags = self.model.tag(feats)
+            results.append(list(zip(tokens, tags, strict=False)))
+        return results
+
+    def train(
+        self,
+        tagged_list: list[TaggedSentence],
+        c1: float = 0.4,
+        c2: float = 0.04,
+        max_iteration: int = 400,
+        verbose: bool = True,
+        file_name: str = "crf.model",
+        report_duration: bool = True,
+    ) -> None:
+        """مدل را آموزش می‌دهد."""
         trainer = Trainer(verbose=verbose)
-        trainer.set_params(args)
+        trainer.set_params({
+            "c1": c1,
+            "c2": c2,
+            "max_iterations": max_iteration,
+            "feature.possible_transitions": True,
+        })
 
-        for xseq, yseq in zip(x, y):
+        inputs = [[x for x, _ in sent] for sent in tagged_list]
+        labels = [[y for _, y in sent] for sent in tagged_list]
+        features_data = self.data_maker(inputs)
+
+        for xseq, yseq in zip(features_data, labels, strict=False):
             trainer.append(xseq, yseq)
 
         start_time = time.time()
@@ -89,287 +136,84 @@ class SequenceTagger:
         end_time = time.time()
 
         if report_duration:
-            print(f"training time: {(end_time - start_time):.2f} sec")
+            logger.info("Training time: %.2f sec", end_time - start_time)
 
         self.load_model(file_name)
 
-    def __evaluate(self: "SequenceTagger", gold_labels, predicted_labels):
-        gold_labels = np.concatenate(gold_labels)
-        predicted_labels = np.concatenate(predicted_labels)
-        return float(accuracy_score(gold_labels, predicted_labels))
-
-    def load_model(self: "SequenceTagger", model):
-        """فایل تگر را بارگزاری می‌کند.
-
-        Examples:
-            >>> tagger = SequenceTagger()
-            >>> tagger.load_model(model = 'tagger.model')
-
-        Args:
-            model (str): مسیر فایل تگر.
-
-        """
-        tagger = Tagger()
-        tagger.open(model)
-        self.model = tagger
-
-    def tag(self: "SequenceTagger", tokens):
-        """یک جمله را در قالب لیستی از توکن‌ها دریافت می‌کند و در خروجی لیستی از
-        `(توکن، برچسب)`ها برمی‌گرداند.
-
-        Examples:
-            >>> tagger = SequenceTagger(model = 'tagger.model')
-            >>> tagger.tag(tokens = ['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
-            [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
-
-        Args:
-            tokens (List[str]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
-
-        Returns:
-            (List[Tuple[str,str]]): ‌لیستی از `(توکن، برچسب)`ها.
-
-        """
+    def save_model(self, filename: str) -> None:
+        """مدل را ذخیره می‌کند."""
         if self.model is None:
-            msg = "you should load model first..."
+            msg = "Model is not loaded."
             raise ValueError(msg)
-
-        return self.__tag(tokens)
-
-    def tag_sents(self: "SequenceTagger", sentences):
-        """جملات را در قالب لیستی از توکن‌ها دریافت می‌کند
-        و در خروجی، لیستی از لیستی از `(توکن، برچسب)`ها برمی‌گرداند.
-
-        هر لیست از `(توکن، برچسب)`ها مربوط به یک جمله است.
-
-        Examples:
-            >>> tagger = SequenceTagger(model = 'tagger.model')
-            >>> tagger.tag_sents(sentences = [['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.']])
-            [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
-
-        Args:
-            sentences (List[List[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
-
-        Returns:
-            (List[List[Tuple[str,str]]]): لیستی از لیستی از `(توکن، برچسب)`ها.
-                    هر لیست از `(توکن،برچسب)`ها مربوط به یک جمله است.
-
-        """
-        if self.model is None:
-            msg = "you should load model first..."
-            raise ValueError(msg)
-
-        return [self.__tag(tokens) for tokens in sentences]
-
-    def train(
-        self: "SequenceTagger",
-        tagged_list,
-        c1=0.4,
-        c2=0.04,
-        max_iteration=400,
-        verbose=True,
-        file_name="crf.model",
-        report_duration=True,
-    ):
-        """لیستی از جملات را می‌گیرد و بر اساس آن مدل را آموزش می‌دهد.
-
-        هر جمله، لیستی از `(توکن، برچسب)`هاست.
-
-        Examples:
-            >>> tagger = SequenceTagger()
-            >>> tagger.train(tagged_list = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]], c1 = 0.5, c2 = 0.5, max_iteration = 100, verbose = True, file_name = 'tagger.model', report_duration = True)
-            Feature generation
-            type: CRF1d
-            feature.minfreq: 0.000000
-            feature.possible_states: 0
-            feature.possible_transitions: 1
-            0....1....2....3....4....5....6....7....8....9....10
-            Number of features: 150
-            Seconds required: 0.001
-            ...
-            Writing feature references for attributes
-            Seconds required: 0.000
-
-            training time: 0.01 sec
-
-        Args:
-            tagged_list (List[{List[Tuple[str,str]]]): جملاتی که مدل از روی آن‌ها آموزش می‌بیند.
-            c1 (float): مقدار L1 regularization.
-            c2 (float): مقدار L2 regularization.
-            max_iteration (int): تعداد تکرار آموزش بر کل دیتا.
-            verbose (boolean): نمایش اطلاعات مربوط به آموزش.
-            file_name (str): نام و مسیر فایلی که می‌خواهید مدل در آن ذخیره شود.
-            report_duration (boolean): نمایش گزارشات مربوط به زمان.
-
-        """
-        x = self.data_maker(
-            [[x for x, _ in tagged_sent] for tagged_sent in tagged_list],
-        )
-        y = [[y for _, y in tagged_sent] for tagged_sent in tagged_list]
-
-        args = {
-            "c1": c1,
-            "c2": c2,
-            "max_iterations": max_iteration,
-            "feature.possible_transitions": True,
-        }
-
-        self.__train(x, y, args, verbose, file_name, report_duration)
-
-    def save_model(self: "SequenceTagger", filename):
-        """مدل تهیه‌شده توسط تابع [train()][hazm.sequence_tagger.SequenceTagger.train]
-        را ذخیره می‌کند.
-
-        Examples:
-            >>> tagger = SequenceTagger()
-            >>> tagger.train(tagged_list = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]], c1 = 0.5, c2 = 0.5, max_iteration = 100, verbose = True, file_name = 'tagger.model', report_duration = True)
-            >>> tagger.save_model(file_name = 'new_tagger.model')
-
-        Args:
-            filename (str): نام و مسیر فایلی که می‌خواهید مدل در آن ذخیره شود.
-
-        """
-        if self.model is None:
-            msg = "you should load model first..."
-            raise ValueError(msg)
-
         self.model.dump(filename)
 
-    def evaluate(
-        self: "SequenceTagger", tagged_sent: List[List[Tuple[str, str]]],
-    ) -> float:
-        """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
-
-        Examples:
-            >>> tagger = SequenceTagger(model = 'tagger.model')
-            >>> tagger.evaluate([[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')]])
-            1.0
-
-
-        Args:
-            tagged_sent: جملات لیبل‌داری که با استفاده از آن مدل را ارزیابی می‌کنیم.
-
-        Returns:
-            دقت مدل
-
-        """
+    def evaluate(self, tagged_sent: list[TaggedSentence]) -> float:
+        """ارزیابی مدل."""
         if self.model is None:
-            msg = "you should load model first..."
+            msg = "Model is not loaded."
             raise ValueError(msg)
 
-        def extract_labels(tagged_list):
-            return [[label for _, label in sent] for sent in tagged_list]
+        inputs = [[x for x, _ in sent] for sent in tagged_sent]
+        gold_labels = [y for sent in tagged_sent for _, y in sent]
 
-        tokens = [[word for word, _ in sent] for sent in tagged_sent]
-        predicted_tagged_sent = self.tag_sents(tokens)
-        return self.__evaluate(
-            extract_labels(tagged_sent),
-            extract_labels(predicted_tagged_sent),
-        )
+        predicted_sents = self.tag_sents(inputs)
+        predicted_labels = [tag for sent in predicted_sents for _, tag in sent]
+
+        return float(accuracy_score(gold_labels, predicted_labels))
 
 
 class IOBTagger(SequenceTagger):
-    """IOBTagger."""
+    """کلاس IOBTagger برای تقطیع متن (Chunking)."""
 
-    def __init__(self: "SequenceTagger", model=None, data_maker=iob_data_maker) -> None:
+    def __init__(
+        self,
+        model: str | Path | None = None,
+        data_maker: Callable = iob_data_maker,
+    ) -> None:
         super().__init__(model, data_maker)
 
-    def __iob_format(self: "SequenceTagger", tagged_data, chunk_tags):
+    def __iob_format(
+        self,
+        tagged_data: TaggedSentence,
+        chunk_tags: TaggedSentence,
+    ) -> ChunkedSentence:
+        """فرمت خروجی را به صورت (word, pos, chunk) در می‌آورد."""
         return [
             (token[0], token[1], chunk_tag[1])
-            for token, chunk_tag in zip(tagged_data, chunk_tags)
+            for token, chunk_tag in zip(tagged_data, chunk_tags, strict=False)
         ]
 
-    def tag(self: "SequenceTagger", tagged_data):
-        """یک جمله را در قالب لیستی از توکن‌ها و تگ‌ها دریافت می‌کند و در خروجی لیستی از
-        `(توکن، تگ، برچسب)`ها برمی‌گرداند.
-
-        Examples:
-            >>> iobTagger = IOBTagger(model = 'tagger.model')
-            >>> iobTagger.tag(tagged_data = [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')])
-            [('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN,EZ', 'B-NP'), ('ایران', 'NOUN', 'I-NP'), ('رفته_بودم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]
-
-        Args:
-            tagged_data (List[Tuple[str, str]]): لیستی از توکن‌های یک جمله که باید برچسب‌گذاری شود.
-
-        Returns:
-            (List[Tuple[str, str, str]]): ‌لیستی از `(توکن، تگ، برچسب)`ها.
-
-        """
+    def tag(self, tagged_data: TaggedSentence) -> ChunkedSentence:
+        """یک جمله را برچسب‌گذاری IOB می‌کند."""
         chunk_tags = super().tag(tagged_data)
         return self.__iob_format(tagged_data, chunk_tags)
 
-    def tag_sents(self: "SequenceTagger", sentences):
-        """جملات را در قالب لیستی لیستی از توکن‌ها و تگ‌ها دریافت می‌کند
-        و در خروجی، لیستی از لیستی از `(توکن، تگ، برچسب)`ها برمی‌گرداند.
-
-        هر لیست از `(توکن، برچسب)`ها مربوط به یک جمله است.
-
-        Examples:
-            >>> iobTagger = IOBTagger(model = 'tagger.model')
-            >>> iobTagger.tag_sents(tagged_data = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]])
-            [[('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN,EZ', 'B-NP'), ('ایران', 'NOUN', 'I-NP'), ('رفته_بودم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]]
-
-        Args:
-            sentences (List[List[str]]): لیستی از جملات که باید برچسب‌گذاری شود.
-
-        Returns:
-            (List[List[Tuple[str,str]]]): لیستی از لیستی از `(توکن، تگ، برچسب)`ها.
-                    هر لیست از `(توکن، تگ، برچسب)`ها مربوط به یک جمله است.
-
-        """
-        chunk_tags = super().tag_sents(sentences)
+    def tag_sents(self, sentences: list[TaggedSentence]) -> list[ChunkedSentence]:
+        """لیستی از جملات را برچسب‌گذاری می‌کند."""
+        chunk_tags_list = super().tag_sents(sentences)
         return [
             self.__iob_format(tagged_data, chunks)
-            for tagged_data, chunks in zip(sentences, chunk_tags)
+            for tagged_data, chunks in zip(sentences, chunk_tags_list, strict=False)
         ]
 
     def train(
-        self: "SequenceTagger",
-        tagged_list: List[List[Tuple[str, str, str]]],
+        self,
+        tagged_list: list[ChunkedSentence],
         c1: float = 0.4,
         c2: float = 0.04,
         max_iteration: int = 400,
-        verbose: True = True,
+        verbose: bool = True,
         file_name: str = "crf.model",
-        report_duration=True,
-    ):
-        """لیستی از جملات را می‌گیرد و بر اساس آن مدل را آموزش می‌دهد.
-
-        هر جمله، لیستی از `(توکن، تگ، برچسب)`هاست.
-
-        Examples:
-            >>> iobTagger = IOBTagger()
-            >>> iobTagger.train(tagged_list = [[('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN,EZ', 'B-NP'), ('ایران', 'NOUN', 'I-NP'), ('رفته_بودم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]], c1 = 0.5, c2 = 0.5, max_iteration = 100, verbose = True, file_name = 'newIOBTagger.model', report_duration = True)
-            Feature generation
-            type: CRF1d
-            feature.minfreq: 0.000000
-            feature.possible_states: 0
-            feature.possible_transitions: 1
-            0....1....2....3....4....5....6....7....8....9....10
-            Number of features: 150
-            Seconds required: 0.001
-            ...
-            Writing feature references for attributes
-            Seconds required: 0.000
-
-            training time: 0.01 sec
-
-        Args:
-            tagged_list: جملاتی که مدل از روی آن‌ها آموزش می‌بیند.
-            c1: مقدار L1 regularization.
-            c2: مقدار L2 regularization.
-            max_iteration: تعداد تکرار آموزش بر کل دیتا.
-            verbose: نمایش اطلاعات مربوط به آموزش.
-            file_name: نام و مسیر فایلی که می‌خواهید مدل در آن ذخیره شود.
-            report_duration: نمایش گزارشات مربوط به زمان.
-
-        """
-        tagged_list = [
-            [((word, tag), chunk) for word, tag, chunk in tagged_sent]
-            for tagged_sent in tagged_list
+        report_duration: bool = True,
+    ) -> None:
+        """مدل را آموزش می‌دهد."""
+        compatible_tagged_list = [
+            [((word, tag), chunk) for word, tag, chunk in sent]
+            for sent in tagged_list
         ]
+
         return super().train(
-            tagged_list,
+            compatible_tagged_list,
             c1,
             c2,
             max_iteration,
@@ -378,34 +222,16 @@ class IOBTagger(SequenceTagger):
             report_duration,
         )
 
-    def evaluate(
-        self: "SequenceTagger", tagged_sent: List[List[Tuple[str, str, str]]],
-    ) -> float:
-        """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
-
-        Examples:
-            >>> iobTagger = IOBTagger(model = 'tagger.model')
-            >>> iobTagger.evaluate([[('نامه', 'NOUN,EZ', 'B-NP'), ('ایشان', 'PRON', 'I-NP'), ('را', 'ADP', 'B-POSTP'), ('دریافت', 'NOUN', 'B-VP'), ('داشتم', 'VERB', 'I-VP'), ('.', 'PUNCT', 'O')]])
-            1.0
-
-
-        Args:
-            tagged_sent: جملات لیبل‌داری که با استفاده از آن مدل را ارزیابی می‌کنیم.
-
-        Returns:
-            دقت مدل
-
-        """
+    def evaluate(self, tagged_sent: list[ChunkedSentence]) -> float:
+        """ارزیابی مدل."""
         if self.model is None:
-            msg = "you should load model first..."
+            msg = "Model is not loaded."
             raise ValueError(msg)
 
-        def extract_labels(tagged_list):
-            return [[token[-1] for token in sent] for sent in tagged_list]
+        inputs = [[(word, tag) for word, tag, _ in sent] for sent in tagged_sent]
+        gold_labels = [chunk for sent in tagged_sent for _, _, chunk in sent]
 
-        tokens = [[token[:-1] for token in sent] for sent in tagged_sent]
-        predicted_tagged_sent = self.tag_sents(tokens)
-        return super()._SequenceTagger__evaluate(
-            extract_labels(tagged_sent),
-            extract_labels(predicted_tagged_sent),
-        )
+        predicted_sents = self.tag_sents(inputs)
+        predicted_labels = [chunk for sent in predicted_sents for _, _, chunk in sent]
+
+        return float(accuracy_score(gold_labels, predicted_labels))

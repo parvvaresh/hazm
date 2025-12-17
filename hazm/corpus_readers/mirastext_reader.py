@@ -4,9 +4,8 @@
 ۲۵۰ خبرگزاری فارسی است.
 
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
 
 
 class MirasTextReader:
@@ -20,17 +19,18 @@ class MirasTextReader:
     def __init__(self: "MirasTextReader", filename: str) -> None:
         self._filename = filename
 
-    def docs(self: "MirasTextReader") -> Iterator[Dict[str, str]]:
+    def docs(self: "MirasTextReader") -> Iterator[dict[str, str]]:
         """خبرها را برمی‌گرداند.
 
         Yields:
             خبر بعدی.
 
         """
-        for line in Path(self._filename).open(encoding="utf-8"):
-            parts = line.split("***")
-            # todo: extract link, tags, ...
-            yield {"text": parts[0].strip()}
+        with Path(self._filename).open(encoding="utf-8") as file:
+            for line in file:
+                parts = line.split("***")
+                # todo: extract link, tags, ...
+                yield {"text": parts[0].strip()}
 
     def texts(self: "MirasTextReader") -> Iterator[str]:
         """فقط متن خبرها را برمی‌گرداند.

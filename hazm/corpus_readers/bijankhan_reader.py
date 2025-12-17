@@ -10,14 +10,10 @@
 """
 
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
 
-from hazm import Normalizer
-
+from ..normalizer import Normalizer
 from .peykare_reader import join_verb_parts
 
 default_pos_map = {
@@ -78,7 +74,7 @@ class BijankhanReader:
         self: "BijankhanReader",
         bijankhan_file: str,
         joined_verb_parts: bool = True,
-        pos_map: Optional[str] = None,
+        pos_map: str | None = None,
     ) -> None:
         if pos_map is None:
             pos_map = default_pos_map
@@ -87,7 +83,7 @@ class BijankhanReader:
         self._pos_map = pos_map
         self._normalizer = Normalizer(correct_spacing=False)
 
-    def _sentences(self: "BijankhanReader") -> Iterator[List[Tuple[str, str]]]:
+    def _sentences(self: "BijankhanReader") -> Iterator[list[tuple[str, str]]]:
         """جملات پیکره را به شکل متن خام برمی‌گرداند.
 
         Yields:
@@ -107,12 +103,12 @@ class BijankhanReader:
                     if (
                         tag == "DELM"
                         and word in ("#", "*", ".", "؟", "!")
-                        and len(sentence)
+                        and sentence
                     ):
                         yield sentence
                         sentence = []
 
-    def sents(self: "BijankhanReader") -> Iterator[List[Tuple[str, str]]]:
+    def sents(self: "BijankhanReader") -> Iterator[list[tuple[str, str]]]:
         """جملات پیکره را به شکل لیستی از `(توکن،برچسب)`ها برمی‌گرداند..
 
         Examples:
@@ -125,7 +121,7 @@ class BijankhanReader:
 
         """
 
-        def map_poses(item: Tuple[str, str]) -> Tuple[str, str]:
+        def map_poses(item: tuple[str, str]) -> tuple[str, str]:
             return (item[0], self._pos_map.get(item[1], item[1]))
 
         for sentence in self._sentences():

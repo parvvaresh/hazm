@@ -1120,7 +1120,7 @@ def splitParts(paramsList):
     cur = 0
 
     for s, e in findMatchingBraces(paramsList):
-        par = paramsList[cur:s].split(sep)
+        par = paramslist[cur:s].split(sep)
         if par:
             if parameters:
                 # portion before | belongs to previous parameter
@@ -1133,10 +1133,10 @@ def splitParts(paramsList):
         elif not parameters:
             parameters = ['']  # create first param
         # add span to last previous parameter
-        parameters[-1] += paramsList[s:e]
+        parameters[-1] += paramslist[s:e]
         cur = e
     # leftover
-    par = paramsList[cur:].split(sep)
+    par = paramslist[cur:].split(sep)
     if par:
         if parameters:
             # portion before | belongs to previous parameter

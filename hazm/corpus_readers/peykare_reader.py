@@ -18,17 +18,15 @@
 
 import codecs
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
-from hazm.normalizer import Normalizer
-from hazm.word_tokenizer import WordTokenizer
+from ..normalizer import Normalizer
+from ..word_tokenizer import WordTokenizer
 
 
-def coarse_pos_u(tags: List[str], word: str) -> List[str]:
+def coarse_pos_u(tags: list[str], word: str) -> list[str]:
     """برچسب‌های ریز را به برچسب‌های درشت منطبق با استاندارد جهانی (coarse-grained
     universal pos tags) تبدیل می‌کند.
 
@@ -139,25 +137,14 @@ def coarse_pos_u(tags: List[str], word: str) -> List[str]:
         "سوّم",
     }
     try:
-        old_pos = list(
-            set(tags)
-            & {
-                "N",
-                "V",
-                "AJ",
-                "ADV",
-                "PRO",
-                "DET",
-                "P",
-                "POSTP",
-                "NUM",
-                "CONJ",
-                "PUNC",
-                "CL",
-                "INT",
-                "RES",
-            },
-        )[0]
+        old_pos = next(
+            iter(set(tags) & {
+                "N", "V", "AJ", "ADV", "PRO", "DET",
+                "P", "POSTP", "NUM", "CONJ", "PUNC",
+                "CL", "INT", "RES",
+            }),
+        )
+
         if old_pos == "CONJ" and word in sconj_list:
             return "SCONJ"
         if old_pos == "NUM" and word in num_adj_list:
@@ -167,7 +154,7 @@ def coarse_pos_u(tags: List[str], word: str) -> List[str]:
         return "NOUN"
 
 
-def coarse_pos_e(tags: List[str], word) -> List[str]: # noqa: D417, ARG001
+def coarse_pos_e(tags: list[str], word) -> list[str]: # noqa: D417, ARG001
     """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
 
     Examples:
@@ -182,30 +169,19 @@ def coarse_pos_e(tags: List[str], word) -> List[str]: # noqa: D417, ARG001
 
     """
     try:
-        return list(
-            set(tags)
-            & {
-                "N",
-                "V",
-                "AJ",
-                "ADV",
-                "PRO",
-                "DET",
-                "P",
-                "POSTP",
-                "NUM",
-                "CONJ",
-                "PUNC",
-                "CL",
-                "INT",
-                "RES",
-            },
-        )[0] + (",EZ" if "EZ" in tags else "")
+        return next(
+            iter(set(tags) & {
+                "N", "V", "AJ", "ADV", "PRO", "DET",
+                "P", "POSTP", "NUM", "CONJ", "PUNC",
+                "CL", "INT", "RES",
+            }),
+        ) + (",EZ" if "EZ" in tags else "")
+
     except:
         return "N"
 
 
-def join_verb_parts(sentence: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+def join_verb_parts(sentence: list[tuple[str, str]]) -> list[tuple[str, str]]:
     """جمله را در قالب لیستی از `(توکن، برچسب)‌`ها می‌گیرد و توکن‌های مربوط به
     افعال چندبخشی را با کاراکتر زیرخط (_) به هم می‌چسباند.
 
@@ -287,7 +263,7 @@ class PeykareReader:
 
     def doc_to_sents(
         self: "PeykareReader", document: str,
-    ) -> Iterator[List[Tuple[str, str]]]:
+    ) -> Iterator[list[tuple[str, str]]]:
         """سند ورودی را به لیستی از جملات تبدیل می‌کند.
 
         هر جمله لیستی از `(کلمه, برچسب)`ها است.
@@ -315,7 +291,7 @@ class PeykareReader:
                     yield sentence
                 sentence = []
 
-    def sents(self: "PeykareReader") -> Iterator[List[Tuple[str, str]]]:
+    def sents(self: "PeykareReader") -> Iterator[list[tuple[str, str]]]:
         """جملات پیکره را در قالب لیستی از `(توکن، برچسب)`ها برمی‌گرداند.
 
         Examples:
@@ -330,7 +306,7 @@ class PeykareReader:
 
         # >>> peykare = PeykareReader(root='peykare', joined_verb_parts=False, pos_map=None)
         # >>> next(peykare.sents())
-        def map_pos(item: str) -> Tuple:
+        def map_pos(item: str) -> tuple:
             return (item[0], self._pos_map(item[1].split(","), item[0]))
 
         for document in self.docs():

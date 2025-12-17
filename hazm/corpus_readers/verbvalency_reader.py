@@ -18,21 +18,18 @@
 """
 
 
-from collections import namedtuple
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
+from typing import NamedTuple
 
-Verb = namedtuple(
-    "Verb",
-    (
-        "past_light_verb",
-        "present_light_verb",
-        "prefix",
-        "nonverbal_element",
-        "preposition",
-        "valency",
-    ),
-)
+
+class Verb(NamedTuple):
+    past_light_verb: str
+    present_light_verb: str
+    prefix: str
+    nonverbal_element: str
+    preposition: str
+    valency: str
 
 
 class VerbValencyReader:
