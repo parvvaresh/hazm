@@ -7,6 +7,7 @@
 
 import re
 from pathlib import Path
+
 from flashtext import KeywordProcessor
 from nltk.tokenize.api import TokenizerI
 

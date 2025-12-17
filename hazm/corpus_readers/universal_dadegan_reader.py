@@ -48,6 +48,7 @@ class UniversalDadeganReader(DadeganReader):
     def __init__(self: DadeganReader, conllu_file: str) -> None:
         self._conll_file = conllu_file
         self._pos_map = lambda tags, _: ",".join(tags)
+        self._top_relation_label = "root"
 
     def _sentences(self: DadeganReader) -> Iterator[str]:
         """جملات پیکره را به شکل متن خام برمی‌گرداند.

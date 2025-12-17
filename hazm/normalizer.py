@@ -2,6 +2,7 @@
 
 import re
 
+from hazm.api import NormalizerProtocol
 from hazm.constants import AFFIX_SPACING_PATTERNS
 from hazm.constants import DIACRITICS_PATTERNS
 from hazm.constants import EXTRA_SPACE_PATTERNS
@@ -15,10 +16,9 @@ from hazm.constants import TRANSLATION_DST
 from hazm.constants import TRANSLATION_SRC
 from hazm.constants import UNICODE_REPLACEMENTS
 from hazm.lemmatizer import Lemmatizer
-from hazm.api import NormalizerProtocol
-from hazm.word_tokenizer import WordTokenizer
 from hazm.utils import maketrans
 from hazm.utils import regex_replace
+from hazm.word_tokenizer import WordTokenizer
 
 
 class Normalizer(NormalizerProtocol):
@@ -399,7 +399,7 @@ class Normalizer(NormalizerProtocol):
             if result:
                 token_pair = result[-1] + "‌" + token
                 if self._words and (
-                    token_pair in self._verbs # type: ignore
+                    token_pair in self._verbs
                     or (token_pair in self._words and self._words[token_pair][0] > 0)
                 ):
                     joined = True

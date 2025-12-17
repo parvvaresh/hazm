@@ -6,8 +6,6 @@ import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import List
-from typing import Tuple
 
 from nltk.parse import DependencyGraph
 from nltk.parse.malt import MaltParser as NLTKMaltParser
@@ -31,9 +29,9 @@ class MaltParser(NLTKMaltParser):
         self.tagger = tagger
         self.working_dir = working_dir
         self.mco = model_file
-        self._malt_bin = os.path.join(working_dir, "malt.jar")
+        self._malt_bin = Path(working_dir) / "malt.jar"
         self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_"
+            lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
 
     def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
@@ -48,10 +46,10 @@ class MaltParser(NLTKMaltParser):
     ) -> Iterator[DependencyGraph]:
         """گراف وابستگی‌ها را برای جملات ورودی برمی‌گرداند."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            input_path = os.path.join(temp_dir, "malt_input.conll")
-            output_path = os.path.join(temp_dir, "malt_output.conll")
+            input_path = Path(temp_dir) / "malt_input.conll"
+            output_path = Path(temp_dir) / "malt_output.conll"
 
-            with open(input_path, "w", encoding="utf8") as input_file:
+            with Path(input_path).open("w", encoding="utf8") as input_file:
                 for sentence in sentences:
                     for i, (word, tag) in enumerate(sentence, start=1):
                         word = word.strip() or "_"
@@ -78,9 +76,10 @@ class MaltParser(NLTKMaltParser):
             ]
 
             if self._execute(cmd, verbose) != 0:
-                raise Exception(f"MaltParser parsing failed: {' '.join(cmd)}")
+                msg = f"MaltParser parsing failed: {' '.join(cmd)}"
+                raise Exception(msg)
 
-            with open(output_path, encoding="utf8") as output_file:
+            with Path(output_path).open(encoding="utf8") as output_file:
                 content = output_file.read()
                 for item in content.split("\n\n"):
                     if item.strip():

@@ -1,9 +1,9 @@
 """این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
 
 import logging
+import subprocess
 from pathlib import Path
 from typing import Any
-from typing import List
 
 import spacy
 from nltk.tag import stanford
@@ -13,10 +13,10 @@ from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
-from hazm.types import Sentence
-from hazm.sequence_tagger import SequenceTagger
-from hazm.types import TaggedSentence
 from hazm.api import TaggerProtocol
+from hazm.sequence_tagger import SequenceTagger
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
 from hazm.types import Token
 
 logger = logging.getLogger(__name__)
@@ -125,9 +125,9 @@ class StanfordPOSTagger(stanford.StanfordPOSTagger):
         """Constructor."""
         self._SEPARATOR = "/"
         super().__init__(
+            *args,
             model_filename=model_filename,
             path_to_jar=path_to_jar,
-            *args,
             **kwargs,
         )
 
@@ -188,7 +188,8 @@ class SpacyPOSTagger(POSTagger):
     def _custom_tokenizer(self, text: str) -> Doc:
         if self.tagger and text in self.peykare_dict:
             return Doc(self.tagger.vocab, self.peykare_dict[text])
-        raise ValueError("No tokenization available for input.")
+        msg = "No tokenization available for input."
+        raise ValueError(msg)
 
     def _update_dictionary(self, sents: list[Sentence]) -> None:
         """Add sentences to the custom tokenizer dictionary."""
@@ -222,7 +223,8 @@ class SpacyPOSTagger(POSTagger):
     def tag(self, tokens: Sentence, universal_tag: bool = True) -> TaggedSentence:
         """Tag a single sentence."""
         if self.tagger is None:
-             raise ValueError("Model is not loaded. Please provide model_path in init.")
+             msg = "Model is not loaded. Please provide model_path in init."
+             raise ValueError(msg)
 
         self._update_dictionary([tokens])
 
@@ -244,7 +246,8 @@ class SpacyPOSTagger(POSTagger):
     ) -> list[TaggedSentence]:
         """Tag sentences."""
         if self.tagger is None:
-             raise ValueError("Model is not loaded.")
+             msg = "Model is not loaded."
+             raise ValueError(msg)
 
         self._update_dictionary(sents)
 
@@ -322,7 +325,8 @@ class SpacyPOSTagger(POSTagger):
         self._update_dictionary(tokens_list)
 
         if not self.tagger:
-            raise ValueError("Model does not exist.")
+            msg = "Model does not exist."
+            raise ValueError(msg)
 
         gold_labels = [[tag for _, tag in sent] for sent in test_sents]
         prediction_labels = self.tag_sents(tokens_list, batch_size=batch_size, universal_tag=False) # Get raw tags first

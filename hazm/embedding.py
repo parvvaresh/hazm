@@ -5,8 +5,6 @@ import warnings
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import List
-from typing import Tuple
 
 import fasttext as fstxt
 import numpy as np
@@ -15,8 +13,8 @@ from gensim.models import Doc2Vec
 from gensim.models import KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
 from gensim.models.doc2vec import TaggedDocument
-from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.models.fasttext import load_facebook_model
+from gensim.scripts.glove2word2vec import glove2word2vec
 from numpy import ndarray
 
 from hazm.normalizer import Normalizer
@@ -38,7 +36,8 @@ class WordEmbedding:
     def load(cls, model_path: str | Path, model_type: str) -> "WordEmbedding":
         """Factory method to load the model."""
         if model_type not in SUPPORTED_EMBEDDINGS:
-            raise KeyError(f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}')
+            msg = f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}'
+            raise KeyError(msg)
 
         model_path = str(model_path)
         model = None
@@ -73,7 +72,8 @@ class WordEmbedding:
             warnings.warn(f"Training is only supported for fasttext, not {self.model_type}", stacklevel=2)
 
         if fasttext_type not in ["cbow", "skipgram"]:
-             raise KeyError(f'Invalid fasttext_type "{fasttext_type}"')
+             msg = f'Invalid fasttext_type "{fasttext_type}"'
+             raise KeyError(msg)
 
         workers = max(1, workers)
 
@@ -88,54 +88,63 @@ class WordEmbedding:
         )
         logger.info("Model trained.")
 
-        logger.info(f"Saving model to {dest_path}...")
+        logger.info("Saving model to %s...", dest_path)
         self.model.save_model(dest_path)
 
         self.model = fstxt.load_facebook_model(dest_path).wv
 
     def __getitem__(self, word: str) -> ndarray:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model[word]
 
     def doesnt_match(self, words: list[str]) -> str:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.doesnt_match(words)
 
     def similarity(self, word1: str, word2: str) -> float:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return float(self.model.similarity(word1, word2))
 
     def nearest_words(self, word: str, topn: int = 5) -> list[tuple[str, float]]:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.most_similar(word, topn=topn)
 
     def get_normal_vector(self, word: str) -> ndarray:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.get_vector(word=word, norm=True)
 
     def get_vocabs(self) -> list[str]:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.index_to_key
 
     def get_vocab_to_index(self) -> dict[str, int]:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.key_to_index
 
     def get_vectors(self) -> ndarray:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vectors
 
     def get_vector_size(self) -> int:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size
 
 
@@ -157,7 +166,7 @@ class CallbackSentEmbedding(CallbackAny2Vec):
         self.epoch = 0
 
     def on_epoch_end(self, model: Doc2Vec) -> None:
-        logger.info(f"Epoch {self.epoch+1} of {model.epochs}...")
+        logger.info("Epoch %d of %d...", self.epoch+1, model.epochs)
         self.epoch += 1
 
 
@@ -213,7 +222,7 @@ class SentEmbedding:
         self._update_word_embedding()
         logger.info("Model trained.")
 
-        logger.info(f"Saving model to {dest_path}...")
+        logger.info("Saving model to %s...", dest_path)
         model.save(dest_path)
 
     def __getitem__(self, sent: str) -> ndarray:
@@ -221,13 +230,15 @@ class SentEmbedding:
 
     def get_sentence_vector(self, sent: str) -> ndarray:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         tokenized_sent = word_tokenize(sent)
         return self.model.infer_vector(tokenized_sent)
 
     def similarity(self, sent1: str, sent2: str) -> float:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return float(self.model.similarity_unseen_docs(
             word_tokenize(sent1),
             word_tokenize(sent2),
@@ -235,5 +246,6 @@ class SentEmbedding:
 
     def get_vector_size(self) -> int:
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size

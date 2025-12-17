@@ -14,10 +14,9 @@ from pathlib import Path
 
 from hazm.api import LemmatizerProtocol
 from hazm.stemmer import Stemmer
-from hazm.word_tokenizer import WordTokenizer
 from hazm.utils import default_verbs
 from hazm.utils import default_words
-
+from hazm.word_tokenizer import WordTokenizer
 
 
 class Conjugation:

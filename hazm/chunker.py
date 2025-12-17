@@ -6,8 +6,6 @@ import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import List
-from typing import Tuple
 
 import spacy
 from nltk.chunk import RegexpParser
@@ -20,9 +18,9 @@ from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
-from hazm.types import ChunkedSentence
-from hazm.sequence_tagger import IOBTagger
 from hazm.pos_tagger import POSTagger
+from hazm.sequence_tagger import IOBTagger
+from hazm.types import ChunkedSentence
 from hazm.types import Sentence
 from hazm.types import TaggedSentence
 from hazm.types import Token
@@ -34,7 +32,7 @@ def tree2brackets(tree: Tree) -> str:
     """خروجی درختی را به یک ساختار کروشه‌ای تبدیل می‌کند."""
     s, tag = "", ""
     for item in tree2conlltags(tree):
-        word, pos, chunk = item
+        word, _, chunk = item
         if chunk[0] in {"B", "O"} and tag:
             s += tag + "] "
             tag = ""
@@ -208,7 +206,8 @@ class SpacyChunker(Chunker):
     def _custom_tokenizer(self, text: str) -> Doc:
         if self.model and text in self.peykare_dict:
             return Doc(self.model.vocab, self.peykare_dict[text])
-        raise ValueError("No tokenization available for input.")
+        msg = "No tokenization available for input."
+        raise ValueError(msg)
 
     def _update_dictionary(self, sents: list[list[str]]) -> None:
         """Add sentences to dictionary."""
@@ -322,7 +321,8 @@ class SpacyChunker(Chunker):
         """Parse a single sentence."""
         tokens = [w for w, _ in sentence]
         if self.model is None:
-             raise ValueError("Model not loaded.")
+             msg = "Model not loaded."
+             raise ValueError(msg)
 
         self._update_dictionary([tokens])
 
@@ -342,7 +342,8 @@ class SpacyChunker(Chunker):
         """Parse multiple sentences."""
         tokens_list = [[w for w, _ in sent] for sent in sentences]
         if self.model is None:
-             raise ValueError("Model not loaded.")
+             msg = "Model not loaded."
+             raise ValueError(msg)
 
         self._update_dictionary(tokens_list)
 

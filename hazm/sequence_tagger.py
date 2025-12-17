@@ -5,8 +5,6 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-from typing import List
-from typing import Tuple
 
 import numpy as np
 from pycrfsuite import Tagger
@@ -86,7 +84,8 @@ class SequenceTagger:
     def tag(self, tokens: Sentence) -> TaggedSentence:
         """یک جمله را برچسب‌گذاری می‌کند."""
         if self.model is None:
-            raise ValueError("Model is not loaded.")
+            msg = "Model is not loaded."
+            raise ValueError(msg)
 
         features_list = self.data_maker([tokens])[0]
         tags = self.model.tag(features_list)
@@ -96,7 +95,8 @@ class SequenceTagger:
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
         """لیستی از جملات را برچسب‌گذاری می‌کند."""
         if self.model is None:
-            raise ValueError("Model is not loaded.")
+            msg = "Model is not loaded."
+            raise ValueError(msg)
 
         features_lists = self.data_maker(sentences)
         results = []
@@ -136,20 +136,22 @@ class SequenceTagger:
         end_time = time.time()
 
         if report_duration:
-            logger.info(f"Training time: {(end_time - start_time):.2f} sec")
+            logger.info("Training time: %.2f sec", end_time - start_time)
 
         self.load_model(file_name)
 
     def save_model(self, filename: str) -> None:
         """مدل را ذخیره می‌کند."""
         if self.model is None:
-            raise ValueError("Model is not loaded.")
+            msg = "Model is not loaded."
+            raise ValueError(msg)
         self.model.dump(filename)
 
     def evaluate(self, tagged_sent: list[TaggedSentence]) -> float:
         """ارزیابی مدل."""
         if self.model is None:
-            raise ValueError("Model is not loaded.")
+            msg = "Model is not loaded."
+            raise ValueError(msg)
 
         inputs = [[x for x, _ in sent] for sent in tagged_sent]
         gold_labels = [y for sent in tagged_sent for _, y in sent]
@@ -209,7 +211,7 @@ class IOBTagger(SequenceTagger):
             [((word, tag), chunk) for word, tag, chunk in sent]
             for sent in tagged_list
         ]
-        
+
         return super().train(
             compatible_tagged_list,
             c1,
@@ -223,7 +225,8 @@ class IOBTagger(SequenceTagger):
     def evaluate(self, tagged_sent: list[ChunkedSentence]) -> float:
         """ارزیابی مدل."""
         if self.model is None:
-            raise ValueError("Model is not loaded.")
+            msg = "Model is not loaded."
+            raise ValueError(msg)
 
         inputs = [[(word, tag) for word, tag, _ in sent] for sent in tagged_sent]
         gold_labels = [chunk for sent in tagged_sent for _, _, chunk in sent]

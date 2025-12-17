@@ -139,8 +139,9 @@ class DadeganReader:
             ساختار درختی جملهٔ بعدی.
 
         """
+        top_label = getattr(self, "_top_relation_label", "ROOT")
         for sentence in self._sentences():
-            tree = DependencyGraph(sentence)
+            tree = DependencyGraph(sentence, top_relation_label=top_label)
 
             for node in word_nodes(tree):
                 node["mtag"] = [node["ctag"], node["tag"]]

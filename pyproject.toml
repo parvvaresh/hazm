@@ -89,6 +89,7 @@ ignore = [
     "TRY002",
     "D100", "D101", "D102", "D103", "D104",
     "D105", "D106", "D107",
+    "ANN401"
 ]
 
 [tool.ruff.lint.isort]
@@ -98,9 +99,10 @@ force-single-line = true
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"data.py" = ["ALL"]
+"data_utils.py" = ["ALL"]
 "mkdocs_macros.py" = ["ALL"]
 "wiki_extractor.py" = ["ALL"]
+"__init__.py" = ["ALL"]
 
 [tool.black]
 target-version = ['py312']
