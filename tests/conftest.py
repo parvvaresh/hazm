@@ -70,12 +70,9 @@ def rull_based_chunker():
 
 @pytest.fixture(scope="session")
 def word_embedding():
-    word_embedding = WordEmbedding(model_type="fasttext")
-    word_embedding.load_model(str(FILES_DIR / "light_word2vec.bin"))
-    return word_embedding
+    return WordEmbedding.load(model_path=str(FILES_DIR / "light_word2vec.bin"), model_type="fasttext")
 
 @pytest.fixture(scope="session")
 def sent_embedding():
-    sent_embedding = SentEmbedding()
-    sent_embedding.load_model(str(FILES_DIR / "light_sent2vec.model"))
-    return sent_embedding
+    return SentEmbedding.load(model_path=str(FILES_DIR / "light_sent2vec.model"))
+

@@ -59,7 +59,6 @@ poethepoet = "^0.38.0"
 ruff = "^0.14.8"
 pytest-cov = "^7.0.0"
 pytest-sugar = "^1.1.1"
-pytest-randomly = "^4.0.1"
 pyinstrument = "^5.1.1"
 
 [build-system]

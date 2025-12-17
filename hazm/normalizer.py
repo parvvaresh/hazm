@@ -1,24 +1,24 @@
 """این ماژول شامل کلاس‌ها و توابعی برای نرمال‌سازی متن است."""
 
 import re
-from hazm.api import NormalizerProtocol
-from hazm.utils import maketrans, regex_replace
-from hazm.word_tokenizer import WordTokenizer
+
+from hazm.constants import AFFIX_SPACING_PATTERNS
+from hazm.constants import DIACRITICS_PATTERNS
+from hazm.constants import EXTRA_SPACE_PATTERNS
+from hazm.constants import NUMBERS_DST
+from hazm.constants import NUMBERS_SRC
+from hazm.constants import PERSIAN_STYLE_PATTERNS
+from hazm.constants import PUNCTUATION_SPACING_PATTERNS
+from hazm.constants import SPECIAL_CHARS_PATTERNS
+from hazm.constants import SUFFIXES
+from hazm.constants import TRANSLATION_DST
+from hazm.constants import TRANSLATION_SRC
+from hazm.constants import UNICODE_REPLACEMENTS
 from hazm.lemmatizer import Lemmatizer
-from hazm.constants import (
-    TRANSLATION_SRC,
-    TRANSLATION_DST,
-    NUMBERS_SRC,
-    NUMBERS_DST,
-    EXTRA_SPACE_PATTERNS,
-    PUNCTUATION_SPACING_PATTERNS,
-    AFFIX_SPACING_PATTERNS,
-    PERSIAN_STYLE_PATTERNS,
-    DIACRITICS_PATTERNS,
-    SPECIAL_CHARS_PATTERNS,
-    UNICODE_REPLACEMENTS,
-    SUFFIXES,
-)
+from hazm.api import NormalizerProtocol
+from hazm.word_tokenizer import WordTokenizer
+from hazm.utils import maketrans
+from hazm.utils import regex_replace
 
 
 class Normalizer(NormalizerProtocol):
@@ -70,12 +70,12 @@ class Normalizer(NormalizerProtocol):
 
         if self._decrease_repeated_chars:
             self.more_than_two_repeat_pattern = re.compile(
-                r"([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی])\1{2,}"
+                r"([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی])\1{2,}",
             )
             self.repeated_chars_pattern = re.compile(
                 r"[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]*"
-                + r"([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی])\1{2,}"
-                + r"[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]*"
+                 r"([آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی])\1{2,}"
+                 r"[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی]*",
             )
 
     def normalize(self, text: str) -> str:
@@ -161,12 +161,12 @@ class Normalizer(NormalizerProtocol):
             if not line.strip():
                 result.append(line)
                 continue
-                
+
             if self._tokenizer:
                 tokens = self._tokenizer.tokenize(line)
                 spaced_tokens = self.token_spacing(tokens)
                 line = " ".join(spaced_tokens)
-            
+
             result.append(line)
 
         text = "\n".join(result)

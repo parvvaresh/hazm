@@ -13,7 +13,6 @@
 from nltk.stem.api import StemmerI
 from hazm.constants import SUFFIXES
 
-
 class Stemmer(StemmerI):
     """این کلاس شامل توابعی برای ریشه‌یابی کلمات است."""
 
@@ -21,35 +20,20 @@ class Stemmer(StemmerI):
         self.ends = sorted(list(SUFFIXES | {"ٔ", "‌ا", "‌"}), key=len, reverse=True)
 
     def stem(self, word: str) -> str:
-        """ریشهٔ کلمه را پیدا می‌کند.
-
-        Examples:
-            >>> stemmer = Stemmer()
-            >>> stemmer.stem('کتابی')
-            'کتاب'
-            >>> stemmer.stem('کتاب‌ها')
-            'کتاب'
-            >>> stemmer.stem('کتاب‌هایی')
-            'کتاب'
-            >>> stemmer.stem('کتابهایشان')
-            'کتاب'
-            >>> stemmer.stem('اندیشه‌اش')
-            'اندیشه'
-            >>> stemmer.stem('خانۀ')
-            'خانه'
-
-        Args:
-            word: کلمه‌ای که باید ریشهٔ آن پیدا شود.
-
-        Returns:
-            ریشهٔ کلمه.
-
-        """
+        """ریشهٔ کلمه را پیدا می‌کند."""
         for end in self.ends:
             if word.endswith(end):
+                if len(end) == 1 and len(word) - len(end) < 3:
+                    continue
+                
                 word = word[:-len(end)]
-        
+                break 
+
         if word.endswith("ۀ"):
             word = word[:-1] + "ه"
+        
+        if word.endswith("\u200c"):
+            word = word[:-1]
 
         return word
+

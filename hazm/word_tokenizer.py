@@ -9,8 +9,12 @@ import re
 from pathlib import Path
 from flashtext import KeywordProcessor
 from nltk.tokenize.api import TokenizerI
+
 from hazm.api import TokenizerProtocol
-from hazm.utils import words_list, default_verbs, default_words, abbreviations
+from hazm.utils import abbreviations
+from hazm.utils import default_verbs
+from hazm.utils import default_words
+from hazm.utils import words_list
 
 
 class WordTokenizer(TokenizerI, TokenizerProtocol):
@@ -59,7 +63,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         self.replace_hashtags = replace_hashtags
 
         self.pattern = re.compile(r'([؟!?]+|[\d.:]+|[:.،؛»\])}"«\[({/\\])')
-        
+
         self.emoji_pattern = re.compile(
             "["
             "\U0001f600-\U0001f64f"
@@ -70,16 +74,16 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         )
         self.id_pattern = re.compile(r"(?<![\w._])(@[\w_]+)")
         self.link_pattern = re.compile(
-            r"((https?|ftp)://)?(?<!@)(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})[-\w@:%_.+/~#?=&]*"
+            r"((https?|ftp)://)?(?<!@)(([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})[-\w@:%_.+/~#?=&]*",
         )
         self.email_pattern = re.compile(
-            r"[a-zA-Z0-9._+-]+@([a-zA-Z0-9-]+\.)+[A-Za-z]{2,}"
+            r"[a-zA-Z0-9._+-]+@([a-zA-Z0-9-]+\.)+[A-Za-z]{2,}",
         )
         self.number_int_pattern = re.compile(
-            r"\b(?<![\d۰-۹][.٫٬,])([\d۰-۹]+)(?![.٫٬,][\d۰-۹])\b"
+            r"\b(?<![\d۰-۹][.٫٬,])([\d۰-۹]+)(?![.٫٬,][\d۰-۹])\b",
         )
         self.number_float_pattern = re.compile(
-            r"\b(?<!\.)([\d۰-۹,٬]+[.٫٬][\d۰-۹]+)\b(?!\.)"
+            r"\b(?<!\.)([\d۰-۹,٬]+[.٫٬][\d۰-۹]+)\b(?!\.)",
         )
         self.hashtag_pattern = re.compile(r"#(\S+)")
 
@@ -88,7 +92,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         self.verbs: list[str] = []
         self.bons: set[str] = set()
         self.verbe: set[str] = set()
-        
+
         if join_verb_parts:
             self._init_verb_parts(verbs_file)
 
@@ -126,7 +130,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
             self.bons = {verb.split("#")[0] for verb in self.verbs}
             self.verbe = set(
                 [bon + "ه" for bon in self.bons]
-                + ["ن" + bon + "ه" for bon in self.bons]
+                + ["ن" + bon + "ه" for bon in self.bons],
             )
 
     def tokenize(self, text: str) -> list[str]:
@@ -160,19 +164,19 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
 
         """
         keyword_processor = None
-        
+
         if self._join_abbreviation:
             keyword_processor = KeywordProcessor()
             rnd = 313
             while str(rnd) in text:
                 rnd += 1
             rnd_str = str(rnd)
-            
+
             text = text.replace(" ", " " * 3)
-            
+
             for i, abbr in enumerate(self.abbreviations):
                 keyword_processor.add_keyword(f" {abbr} ", f"{rnd_str}{i}")
-            
+
             text = keyword_processor.replace_keywords(text)
 
         if self.separate_emoji:
@@ -185,11 +189,11 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
             text = self.id_pattern.sub(" ID ", text)
         if self.replace_hashtags:
             text = self.hashtag_pattern.sub(
-                lambda m: "TAG " + m.group(1).replace("_", " "), text
+                lambda m: "TAG " + m.group(1).replace("_", " "), text,
             )
         if self.replace_numbers:
             text = self.number_int_pattern.sub(
-                lambda m: f" NUM{len(m.group(1))} ", text
+                lambda m: f" NUM{len(m.group(1))} ", text,
             )
             text = self.number_float_pattern.sub(" NUMF ", text)
 
@@ -243,7 +247,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
                 result[-1] = f"{token}_{result[-1]}"
             else:
                 result.append(token)
-        
+
         return list(reversed(result[1:]))
 
 

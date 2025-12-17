@@ -1,29 +1,30 @@
-import subprocess
 import random
+import subprocess
 from collections import Counter
 from itertools import islice
 
 from nltk.tag import untag
 from sklearn.model_selection import train_test_split
 
+from hazm import sent_tokenize
 from hazm.chunker import Chunker
+from hazm.chunker import tree2brackets
+from hazm.corpus_readers import DadeganReader
+from hazm.corpus_readers import PeykareReader
+from hazm.corpus_readers import SentiPersReader
+from hazm.corpus_readers import TNewsReader
+from hazm.corpus_readers import TreebankReader
+from hazm.corpus_readers.peykare_reader import coarse_pos_e as peykare_coarse_pos_e
+from hazm.dependency_parser import MaltParser
+from hazm.dependency_parser import TurboParser
 from hazm.informal_normalizer import InformalNormalizer
 from hazm.lemmatizer import Lemmatizer
 from hazm.normalizer import Normalizer
 from hazm.pos_tagger import POSTagger
-from hazm import sent_tokenize
-
-from hazm.chunker import tree2brackets
-from hazm.corpus_readers import (DadeganReader, PeykareReader, SentiPersReader,
-                                 TNewsReader, TreebankReader)
-from hazm.corpus_readers.peykare_reader import \
-    coarse_pos_e as peykare_coarse_pos_e
-from hazm.dependency_parser import MaltParser, TurboParser
 
 
 def create_words_file(dic_file="tests/files/persian.dic", output="hazm/data/words.dat"):
-    """prepares list of persian word words from [Virastyar](https://sourceforge.net/projects/virastyar/) dic file."""
-
+    """Prepares list of persian word words from [Virastyar](https://sourceforge.net/projects/virastyar/) dic file."""
     dic_words = [
         line.strip().replace(", ", ",").split("\t")
         for line in open(dic_file, encoding="utf-8")
@@ -42,7 +43,7 @@ def create_words_file(dic_file="tests/files/persian.dic", output="hazm/data/word
 
 
 def evaluate_lemmatizer(
-    conll_file="tests/files/train.conll", peykare_root="tests/files/peykare"
+    conll_file="tests/files/train.conll", peykare_root="tests/files/peykare",
 ):
     lemmatizer = Lemmatizer()
 
@@ -57,7 +58,7 @@ def evaluate_lemmatizer(
         print(len(errors), "errors", file=output)
         counter = Counter(errors)
         for item, count in sorted(
-            list(counter.items()), key=lambda t: t[1], reverse=True
+            list(counter.items()), key=lambda t: t[1], reverse=True,
         ):
             print(count, *item, file=output)
 
@@ -72,7 +73,7 @@ def evaluate_lemmatizer(
         print(len(missed), "missed", file=output)
         counter = Counter(missed)
         for item, count in sorted(
-            list(counter.items()), key=lambda t: t[1], reverse=True
+            list(counter.items()), key=lambda t: t[1], reverse=True,
         ):
             print(count, item, file=output)
 
@@ -95,7 +96,7 @@ def evaluate_normalizer(tnews_root="tests/files/tnews"):
     )
 
     with open("tests/files/normalized.txt", "w", "utf8") as output1, open(
-        "tests/files/normalized_token_based.txt", "w", "utf8"
+        "tests/files/normalized_token_based.txt", "w", "utf8",
     ) as output2:
         random.seed(0)
         for text in tnews.texts():
@@ -181,7 +182,7 @@ def train_postagger(
 
     peykare = PeykareReader(peykare_root, pos_map=pos_map)
     train_sents, test_sents = train_test_split(
-        list(islice(peykare.sents(), sents_limit)), test_size=test_size, random_state=0
+        list(islice(peykare.sents(), sents_limit)), test_size=test_size, random_state=0,
     )
 
     tagger.train(train_sents)
@@ -249,10 +250,10 @@ def train_maltparser(
     train_data = train_file + ".data"
     with open(train_data, "w", encoding="utf8") as output:
         for tree, sentence in zip(
-            train.trees(), tagger.tag_sents(list(map(untag, train.sents())))
+            train.trees(), tagger.tag_sents(list(map(untag, train.sents()))),
         ):
             for i, (node, word) in enumerate(
-                zip(list(tree.nodes.values())[1:], sentence), start=1
+                zip(list(tree.nodes.values())[1:], sentence), start=1,
             ):
                 node["mtag"] = word[1]
                 node["lemma"] = lemmatizer.lemmatize(node["word"], node["mtag"])
@@ -291,7 +292,7 @@ def train_maltparser(
             features_file,
             "-m",
             "learn",
-        ]
+        ],
     ).wait()
 
     # evaluation
@@ -308,7 +309,7 @@ def train_maltparser(
         file=open(test_results, "w", encoding="utf8"),
     )
     subprocess.Popen(
-        ["java", "-jar", "tests/files/MaltEval.jar", "-g", test_data, "-s", test_results]
+        ["java", "-jar", "tests/files/MaltEval.jar", "-g", test_data, "-s", test_results],
     ).wait()
 
 
@@ -324,10 +325,10 @@ def train_turboparser(
     train_data = train_file + ".data"
     with open(train_data, "w", "utf8") as output:
         for tree, sentence in zip(
-            train.trees(), tagger.tag_sents(list(map(untag, train.sents())))
+            train.trees(), tagger.tag_sents(list(map(untag, train.sents()))),
         ):
             for i, (node, word) in enumerate(
-                zip(list(tree.nodes.values())[1:], sentence), start=1
+                zip(list(tree.nodes.values())[1:], sentence), start=1,
             ):
                 node["mtag"] = word[1]
                 node["lemma"] = lemmatizer.lemmatize(node["word"], node["mtag"])
@@ -354,7 +355,7 @@ def train_turboparser(
             "--file_train=" + train_data,
             "--file_model=" + model_file,
             "--logtostderr",
-        ]
+        ],
     ).wait()
 
     # evaluation
@@ -383,6 +384,6 @@ def train_turboparser(
             "0.####",
             "--Metric",
             "LAS;UAS",
-        ]
+        ],
     ).wait()
-    
+

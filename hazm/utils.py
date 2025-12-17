@@ -1,8 +1,9 @@
+import importlib.resources
 import re
 import sys
-import importlib.resources
 from pathlib import Path
 from typing import Any
+
 
 def get_data_path(filename: str) -> Path:
     """مسیر فایل داده را به صورت Zip-safe برمی‌گرداند."""
@@ -24,7 +25,7 @@ def maketrans(a: str, b: str) -> dict[int, Any]:
 def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, tuple[str, ...]]]:
     """لیست کلمات را برمی‌گرداند."""
     file_path = Path(words_file) if isinstance(words_file, str) else words_file
-    
+
     with file_path.open(encoding="utf-8") as file:
         items = [line.strip().split("\t") for line in file]
         return [
@@ -36,7 +37,7 @@ def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, t
 def stopwords_list(stopwords_file: str | Path = default_stopwords) -> list[str]:
     """لیست ایست‌واژه‌ها را برمی‌گرداند."""
     file_path = Path(stopwords_file) if isinstance(stopwords_file, str) else stopwords_file
-    
+
     with file_path.open(encoding="utf-8") as file:
         return sorted({w.strip() for w in file})
 

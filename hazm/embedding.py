@@ -1,17 +1,22 @@
 """این ماژول شامل کلاس‌ها و توابعی برای تبدیل کلمه یا متن به برداری از اعداد است."""
-import multiprocessing
 import logging
+import multiprocessing
 import warnings
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator, List, Tuple
+from typing import Any
+from typing import List
+from typing import Tuple
 
 import fasttext as fstxt
 import numpy as np
 import smart_open
-from gensim.models import Doc2Vec, KeyedVectors
+from gensim.models import Doc2Vec
+from gensim.models import KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
 from gensim.models.doc2vec import TaggedDocument
 from gensim.scripts.glove2word2vec import glove2word2vec
+from gensim.models.fasttext import load_facebook_model
 from numpy import ndarray
 
 from hazm.normalizer import Normalizer
@@ -37,9 +42,9 @@ class WordEmbedding:
 
         model_path = str(model_path)
         model = None
-        
+
         if model_type == "fasttext":
-            model = fstxt.load_facebook_model(model_path).wv
+            model = load_facebook_model(model_path).wv
         elif model_type == "keyedvector":
             binary = model_path.endswith("bin")
             model = KeyedVectors.load_word2vec_format(model_path, binary=binary)
@@ -85,7 +90,7 @@ class WordEmbedding:
 
         logger.info(f"Saving model to {dest_path}...")
         self.model.save_model(dest_path)
-        
+
         self.model = fstxt.load_facebook_model(dest_path).wv
 
     def __getitem__(self, word: str) -> ndarray:
@@ -194,16 +199,16 @@ class SentEmbedding:
             vector_size=vector_size,
             workers=workers,
         )
-        
+
         logger.info("Building vocab...")
         model.build_vocab(doc)
-        
+
         logger.info("Training model...")
         callbacks = [CallbackSentEmbedding()]
         model.train(doc, total_examples=model.corpus_count, epochs=epochs, callbacks=callbacks)
 
-        model.dv.vectors = np.array([[]]) 
-        
+        model.dv.vectors = np.array([[]])
+
         self.model = model
         self._update_word_embedding()
         logger.info("Model trained.")

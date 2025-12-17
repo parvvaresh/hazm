@@ -3,20 +3,29 @@
 
 import logging
 import subprocess
-from typing import Iterator, List, Any, Tuple
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
+from typing import List
+from typing import Tuple
 
-from nltk.chunk import RegexpParser, conlltags2tree, tree2conlltags
+import spacy
+from nltk.chunk import RegexpParser
+from nltk.chunk import conlltags2tree
+from nltk.chunk import tree2conlltags
 from nltk.chunk.util import ChunkScore
 from nltk.tree import Tree
-import spacy
-from spacy.tokens import Doc, DocBin
+from spacy.tokens import Doc
+from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
-from hazm.pos_tagger import POSTagger
+from hazm.types import ChunkedSentence
 from hazm.sequence_tagger import IOBTagger
-from hazm.types import Sentence, TaggedSentence, ChunkedSentence, Token
+from hazm.pos_tagger import POSTagger
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
+from hazm.types import Token
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +181,7 @@ class SpacyChunker(Chunker):
         self.model = None
         self.gpu_availability = False
         self.peykare_dict: dict[str, list[str]] = {}
-        
+
         if self.model_path:
             self._setup()
 
@@ -181,7 +190,7 @@ class SpacyChunker(Chunker):
             self._setup_gpu()
         else:
             logger.info("Using CPU for SpacyChunker.")
-            
+
         if self.model_path and Path(self.model_path).exists():
              self.model = spacy.load(self.model_path)
              self.model.tokenizer = self._custom_tokenizer
@@ -226,11 +235,11 @@ class SpacyChunker(Chunker):
             for d, tag in zip(doc, tags, strict=True):
                 d.tag_ = tag
             db.add(doc)
-            
+
         path = Path(saved_directory)
         if not path.exists():
             path.mkdir(parents=True)
-            
+
         db.to_disk(f"{saved_directory}/{dataset_type}.spacy")
 
     def train(
@@ -250,7 +259,7 @@ class SpacyChunker(Chunker):
             subprocess.run(
                 f"python -m spacy init fill-config {base_config_file} {train_config_path}",
                 check=False,
-                shell=True
+                shell=True,
             )
         else:
             self.train_config_file = train_config_path
@@ -278,7 +287,7 @@ class SpacyChunker(Chunker):
 
         subprocess.run(cmd, check=False, shell=True)
         self.model_path = f"{output_dir}/model-last"
-        
+
         if test_dataset:
             tokens_list = [[w for w, _, _ in sent] for sent in test_dataset]
             self._update_dictionary(tokens_list)
@@ -293,11 +302,11 @@ class SpacyChunker(Chunker):
             [(word, tag) for word, tag, _ in sent]
             for sent in golds
         ]
-        
+
         parsed = self.parse_sents(test_inp)
         preds_tree = list(parsed)
         golds_tree = [conlltags2tree(sent) for sent in golds]
-        
+
         chunkscore = ChunkScore()
         for pred, correct in zip(preds_tree, golds_tree, strict=True):
             chunkscore.score(correct, pred)
@@ -321,7 +330,7 @@ class SpacyChunker(Chunker):
         words = [w for w, _ in sentence]
         tags = [tag for _, tag in sentence]
         preds = [w.tag_ for w in doc] # Assuming model predicts chunks in tag_
-        
+
         chunk = list(zip(words, tags, preds, strict=True))
         return conlltags2tree(chunk)
 
@@ -334,7 +343,7 @@ class SpacyChunker(Chunker):
         tokens_list = [[w for w, _ in sent] for sent in sentences]
         if self.model is None:
              raise ValueError("Model not loaded.")
-             
+
         self._update_dictionary(tokens_list)
 
         docs = list(
@@ -343,7 +352,7 @@ class SpacyChunker(Chunker):
                 batch_size=batch_size,
             ),
         )
-        
+
         for i, doc in enumerate(docs):
             words = [w for w, _ in sentences[i]]
             tags = [tag for _, tag in sentences[i]]

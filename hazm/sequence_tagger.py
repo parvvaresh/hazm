@@ -1,15 +1,22 @@
 """این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
 
-import time
 import logging
-from typing import Any, Callable, List, Tuple
+import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
+from typing import List
+from typing import Tuple
 
 import numpy as np
-from pycrfsuite import Tagger, Trainer
+from pycrfsuite import Tagger
+from pycrfsuite import Trainer
 from sklearn.metrics import accuracy_score
 
-from hazm.types import TaggedSentence, Token
+from hazm.types import ChunkedSentence
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
+from hazm.types import Token
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +33,44 @@ def features(sent: list[Token], index: int) -> dict[str, Any]:
     }
 
 
-def data_maker(tokens: list[list[Token]]) -> list[list[dict[str, Any]]]:
+def data_maker(tokens: list[Sentence]) -> list[list[dict[str, Any]]]:
     """تابع دیتا میکر پیش‌فرض."""
     return [[features(sent, index) for index in range(len(sent))] for sent in tokens]
+
+
+def iob_features(words: list[str], pos_tags: list[str], index: int) -> dict[str, Any]:
+    """ویژگی‌های IOB را برمی‌گرداند (شامل تگ‌های POS)."""
+    word_features = features(words, index)
+    word_features.update(
+        {
+            "pos": pos_tags[index],
+            "prev_pos": "" if index == 0 else pos_tags[index - 1],
+            "next_pos": "" if index == len(pos_tags) - 1 else pos_tags[index + 1],
+        },
+    )
+    return word_features
+
+
+def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
+    """تابع دیتا میکر مخصوص IOB (چون ورودی شامل POS Tag است)."""
+    words = [[word for word, _ in token] for token in tokens]
+    tags = [[tag for _, tag in token] for token in tokens]
+    return [
+        [
+            iob_features(words=word_tokens, pos_tags=tag_tokens, index=index)
+            for index in range(len(word_tokens))
+        ]
+        for word_tokens, tag_tokens in zip(words, tags, strict=True)
+    ]
 
 
 class SequenceTagger:
     """کلاس پایه برای برچسب‌گذاری توکن‌ها با استفاده از CRFSuite."""
 
     def __init__(
-        self, 
-        model: str | Path | None = None, 
-        data_maker: Callable = data_maker
+        self,
+        model: str | Path | None = None,
+        data_maker: Callable = data_maker,
     ) -> None:
         self.model: Tagger | None = None
         if model is not None:
@@ -50,21 +83,21 @@ class SequenceTagger:
         tagger.open(str(model_path))
         self.model = tagger
 
-    def tag(self, tokens: list[Token]) -> TaggedSentence:
+    def tag(self, tokens: Sentence) -> TaggedSentence:
         """یک جمله را برچسب‌گذاری می‌کند."""
         if self.model is None:
             raise ValueError("Model is not loaded.")
-        
+
         features_list = self.data_maker([tokens])[0]
         tags = self.model.tag(features_list)
-        
+
         return list(zip(tokens, tags, strict=True))
 
-    def tag_sents(self, sentences: list[list[Token]]) -> list[TaggedSentence]:
+    def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
         """لیستی از جملات را برچسب‌گذاری می‌کند."""
         if self.model is None:
             raise ValueError("Model is not loaded.")
-        
+
         features_lists = self.data_maker(sentences)
         results = []
         for tokens, feats in zip(sentences, features_lists, strict=True):
@@ -91,9 +124,9 @@ class SequenceTagger:
             "feature.possible_transitions": True,
         })
 
-        sentences = [[word for word, _ in sent] for sent in tagged_list]
-        labels = [[tag for _, tag in sent] for sent in tagged_list]
-        features_data = self.data_maker(sentences)
+        inputs = [[x for x, _ in sent] for sent in tagged_list]
+        labels = [[y for _, y in sent] for sent in tagged_list]
+        features_data = self.data_maker(inputs)
 
         for xseq, yseq in zip(features_data, labels, strict=True):
             trainer.append(xseq, yseq)
@@ -109,17 +142,93 @@ class SequenceTagger:
 
     def save_model(self, filename: str) -> None:
         """مدل را ذخیره می‌کند."""
-        pass 
+        if self.model is None:
+            raise ValueError("Model is not loaded.")
+        self.model.dump(filename)
 
     def evaluate(self, tagged_sent: list[TaggedSentence]) -> float:
         """ارزیابی مدل."""
         if self.model is None:
             raise ValueError("Model is not loaded.")
 
-        tokens = [[word for word, _ in sent] for sent in tagged_sent]
-        gold_labels = [tag for sent in tagged_sent for _, tag in sent]
-        
-        predicted_sents = self.tag_sents(tokens)
+        inputs = [[x for x, _ in sent] for sent in tagged_sent]
+        gold_labels = [y for sent in tagged_sent for _, y in sent]
+
+        predicted_sents = self.tag_sents(inputs)
         predicted_labels = [tag for sent in predicted_sents for _, tag in sent]
+
+        return float(accuracy_score(gold_labels, predicted_labels))
+
+
+class IOBTagger(SequenceTagger):
+    """کلاس IOBTagger برای تقطیع متن (Chunking)."""
+
+    def __init__(
+        self,
+        model: str | Path | None = None,
+        data_maker: Callable = iob_data_maker,
+    ) -> None:
+        super().__init__(model, data_maker)
+
+    def __iob_format(
+        self,
+        tagged_data: TaggedSentence,
+        chunk_tags: TaggedSentence,
+    ) -> ChunkedSentence:
+        """فرمت خروجی را به صورت (word, pos, chunk) در می‌آورد."""
+        return [
+            (token[0], token[1], chunk_tag[1])
+            for token, chunk_tag in zip(tagged_data, chunk_tags, strict=True)
+        ]
+
+    def tag(self, tagged_data: TaggedSentence) -> ChunkedSentence:
+        """یک جمله را برچسب‌گذاری IOB می‌کند."""
+        chunk_tags = super().tag(tagged_data)
+        return self.__iob_format(tagged_data, chunk_tags)
+
+    def tag_sents(self, sentences: list[TaggedSentence]) -> list[ChunkedSentence]:
+        """لیستی از جملات را برچسب‌گذاری می‌کند."""
+        chunk_tags_list = super().tag_sents(sentences)
+        return [
+            self.__iob_format(tagged_data, chunks)
+            for tagged_data, chunks in zip(sentences, chunk_tags_list, strict=True)
+        ]
+
+    def train(
+        self,
+        tagged_list: list[ChunkedSentence],
+        c1: float = 0.4,
+        c2: float = 0.04,
+        max_iteration: int = 400,
+        verbose: bool = True,
+        file_name: str = "crf.model",
+        report_duration: bool = True,
+    ) -> None:
+        """مدل را آموزش می‌دهد."""
+        compatible_tagged_list = [
+            [((word, tag), chunk) for word, tag, chunk in sent]
+            for sent in tagged_list
+        ]
         
+        return super().train(
+            compatible_tagged_list,
+            c1,
+            c2,
+            max_iteration,
+            verbose,
+            file_name,
+            report_duration,
+        )
+
+    def evaluate(self, tagged_sent: list[ChunkedSentence]) -> float:
+        """ارزیابی مدل."""
+        if self.model is None:
+            raise ValueError("Model is not loaded.")
+
+        inputs = [[(word, tag) for word, tag, _ in sent] for sent in tagged_sent]
+        gold_labels = [chunk for sent in tagged_sent for _, _, chunk in sent]
+
+        predicted_sents = self.tag_sents(inputs)
+        predicted_labels = [chunk for sent in predicted_sents for _, _, chunk in sent]
+
         return float(accuracy_score(gold_labels, predicted_labels))

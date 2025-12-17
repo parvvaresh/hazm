@@ -1,14 +1,19 @@
 """این ماژول شامل کلاس‌ها و توابعی برای شناساییِ وابستگی‌های دستوری متن است."""
 
+import logging
 import os
 import tempfile
-import logging
-from typing import Iterator, List, Tuple, Any
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
+from typing import List
+from typing import Tuple
 
 from nltk.parse import DependencyGraph
 from nltk.parse.malt import MaltParser as NLTKMaltParser
-from hazm.types import TaggedSentence, Sentence
+
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
 
 logger = logging.getLogger(__name__)
 
@@ -42,18 +47,17 @@ class MaltParser(NLTKMaltParser):
         verbose: bool = False,
     ) -> Iterator[DependencyGraph]:
         """گراف وابستگی‌ها را برای جملات ورودی برمی‌گرداند."""
-        
         with tempfile.TemporaryDirectory() as temp_dir:
             input_path = os.path.join(temp_dir, "malt_input.conll")
             output_path = os.path.join(temp_dir, "malt_output.conll")
-            
+
             with open(input_path, "w", encoding="utf8") as input_file:
                 for sentence in sentences:
                     for i, (word, tag) in enumerate(sentence, start=1):
                         word = word.strip() or "_"
                         lemma = self.lemmatize(word, tag) or "_"
                         input_file.write(
-                            f"{i}\t{word.replace(' ', '_')}\t{lemma.replace(' ', '_')}\t{tag}\t{tag}\t_\t0\tROOT\t_\t_\n"
+                            f"{i}\t{word.replace(' ', '_')}\t{lemma.replace(' ', '_')}\t{tag}\t{tag}\t_\t0\tROOT\t_\t_\n",
                         )
                     input_file.write("\n\n")
 
@@ -72,7 +76,7 @@ class MaltParser(NLTKMaltParser):
                 "-m",
                 "parse",
             ]
-            
+
             if self._execute(cmd, verbose) != 0:
                 raise Exception(f"MaltParser parsing failed: {' '.join(cmd)}")
 

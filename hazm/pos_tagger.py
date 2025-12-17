@@ -2,18 +2,22 @@
 
 import logging
 from pathlib import Path
-from typing import Any, List
+from typing import Any
+from typing import List
 
 import spacy
 from nltk.tag import stanford
-from sklearn.metrics import classification_report, f1_score, precision_score, recall_score
-from spacy.tokens import Doc, DocBin
+from sklearn.metrics import classification_report
+from spacy.tokens import Doc
+from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from tqdm import tqdm
 
+from hazm.types import Sentence
 from hazm.sequence_tagger import SequenceTagger
+from hazm.types import TaggedSentence
 from hazm.api import TaggerProtocol
-from hazm.types import Sentence, TaggedSentence, Token
+from hazm.types import Token
 
 logger = logging.getLogger(__name__)
 
@@ -153,9 +157,9 @@ class SpacyPOSTagger(POSTagger):
         self.gpu_id = gpu_id
         self.tagger = None
         self.gpu_availability = False
-        
+
         self.peykare_dict: dict[str, list[str]] = {}
-        
+
         if self.model_path:
              self._setup()
 
@@ -165,7 +169,7 @@ class SpacyPOSTagger(POSTagger):
             self._setup_gpu()
         else:
             logger.info("Using CPU for SpacyPOSTagger.")
-        
+
         if self.model_path and Path(self.model_path).exists():
              self.tagger = spacy.load(self.model_path)
              self.tagger.tokenizer = self._custom_tokenizer
@@ -212,7 +216,7 @@ class SpacyPOSTagger(POSTagger):
         path = Path(saved_directory)
         if not path.exists():
             path.mkdir(parents=True)
-            
+
         db.to_disk(f"{saved_directory}/{data_type}.spacy")
 
     def tag(self, tokens: Sentence, universal_tag: bool = True) -> TaggedSentence:
@@ -221,10 +225,10 @@ class SpacyPOSTagger(POSTagger):
              raise ValueError("Model is not loaded. Please provide model_path in init.")
 
         self._update_dictionary([tokens])
-        
+
         text = " ".join(tokens)
         doc = self.tagger(text)
-        
+
         if universal_tag:
             tags = [tok.tag_.replace(",EZ", "") for tok in doc]
         else:
@@ -248,9 +252,9 @@ class SpacyPOSTagger(POSTagger):
             self.tagger.pipe(
                 (" ".join(sent) for sent in sents),
                 batch_size=batch_size,
-            )
+            ),
         )
-        
+
         result = []
         for sent, doc in zip(sents, docs, strict=True):
             if universal_tag:
@@ -258,7 +262,7 @@ class SpacyPOSTagger(POSTagger):
             else:
                 tags = [tok.tag_ for tok in doc]
             result.append(list(zip(sent, tags, strict=True)))
-            
+
         return result
 
     def train(
@@ -273,7 +277,7 @@ class SpacyPOSTagger(POSTagger):
     ) -> None:
         """Train the spaCy model."""
         self.spacy_train_directory = data_directory
-        
+
         if train_dataset:
             self._setup_dataset(
                 dataset=train_dataset,
@@ -296,16 +300,16 @@ class SpacyPOSTagger(POSTagger):
             subprocess.run(
                 f"python -m spacy init fill-config {base_config_file} {train_config_path}",
                 check=False,
-                shell=True
+                shell=True,
             )
-        
+
         cmd = f"python -m spacy train {train_config_path} --output ./{output_dir} --paths.train ./{train_data} --paths.dev ./{test_data}"
         if self.gpu_availability:
             cmd += f" --gpu-id {self.gpu_id}"
 
         subprocess.run(cmd, check=False, shell=True)
         self.model_path = f"{output_dir}/model-last"
-        
+
         if test_dataset:
             tokens_list = [[w for w, _ in sent] for sent in test_dataset]
             self._update_dictionary(tokens_list)
@@ -316,7 +320,7 @@ class SpacyPOSTagger(POSTagger):
         """Evaluate the model."""
         tokens_list = [[w for w, _ in sent] for sent in test_sents]
         self._update_dictionary(tokens_list)
-        
+
         if not self.tagger:
             raise ValueError("Model does not exist.")
 
@@ -333,11 +337,11 @@ class SpacyPOSTagger(POSTagger):
         self,
         golds: list[list[str]],
         predictions: list[list[str]],
-        use_ez_tags: bool
+        use_ez_tags: bool,
     ) -> None:
         predictions_cleaned = []
         golds_cleaned = []
-        
+
         def clean_tag(tag: str) -> str:
             if use_ez_tags:
                 return "EZ" if "EZ" in tag else "-"
