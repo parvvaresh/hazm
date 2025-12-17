@@ -63,7 +63,7 @@
 
 ## Installation
 
-To install the latest version of Hazm, run the following command in your terminal:
+To install the latest version of Hazm (requires Python 3.12+), run the following command in your terminal:
 
     pip install hazm
 
@@ -93,15 +93,18 @@ Finally if you want to use our pretrained models, you can download it from the l
 ```python
 >>> from hazm import *
 
+# Normalizer
 >>> normalizer = Normalizer()
 >>> normalizer.normalize('اصلاح نويسه ها و استفاده از نیم‌فاصله پردازش را آسان مي كند')
 'اصلاح نویسه‌ها و استفاده از نیم‌فاصله پردازش را آسان می‌کند'
 
+# Tokenizer
 >>> sent_tokenize('ما هم برای وصل کردن آمدیم! ولی برای پردازش، جدا بهتر نیست؟')
 ['ما هم برای وصل کردن آمدیم!', 'ولی برای پردازش، جدا بهتر نیست؟']
 >>> word_tokenize('ولی برای پردازش، جدا بهتر نیست؟')
 ['ولی', 'برای', 'پردازش', '،', 'جدا', 'بهتر', 'نیست', '؟']
 
+# Stemmer & Lemmatizer
 >>> stemmer = Stemmer()
 >>> stemmer.stem('کتاب‌ها')
 'کتاب'
@@ -109,25 +112,25 @@ Finally if you want to use our pretrained models, you can download it from the l
 >>> lemmatizer.lemmatize('می‌روم')
 'رفت#رو'
 
+# POS Tagger
 >>> tagger = POSTagger(model='pos_tagger.model')
 >>> tagger.tag(word_tokenize('ما بسیار کتاب می‌خوانیم'))
 [('ما', 'PRO'), ('بسیار', 'ADV'), ('کتاب', 'N'), ('می‌خوانیم', 'V')]
 
->>> spacy_posTagger = SpacyPOSTagger(model_path = 'MODELPATH')
->>> spacy_posTagger.tag(tokens = ['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
+# Spacy POS Tagger
+>>> spacy_posTagger = SpacyPOSTagger(model_path='MODELPATH')
+>>> spacy_posTagger.tag(tokens=['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
 [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
 
->>> posTagger = POSTagger(model = 'pos_tagger.model', universal_tag = False)
->>> posTagger.tag(tokens = ['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
-[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')] 
-
+# Chunker
 >>> chunker = Chunker(model='chunker.model')
 >>> tagged = tagger.tag(word_tokenize('کتاب خواندن را دوست داریم'))
 >>> tree2brackets(chunker.parse(tagged))
 '[کتاب خواندن NP] [را POSTP] [دوست داریم VP]'
 
->>> spacy_chunker = SpacyChunker(model_path = 'model_path')
->>> tree = spacy_chunker.parse(sentence = [('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
+# Spacy Chunker
+>>> spacy_chunker = SpacyChunker(model_path='model_path')
+>>> tree = spacy_chunker.parse(sentence=[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
 >>> print(tree)
 (S
   (NP نامه/NOUN,EZ ایشان/PRON)
@@ -135,19 +138,20 @@ Finally if you want to use our pretrained models, you can download it from the l
   (VP دریافت/NOUN داشتم/VERB)
   ./PUNCT)
 
->>> word_embedding = WordEmbedding(model_type = 'fasttext', model_path = 'word2vec.bin')
->>> word_embedding.doesnt_match(['سلام' ,'درود' ,'خداحافظ' ,'پنجره'])
+# Word Embedding
+>>> word_embedding = WordEmbedding.load(model_path='word2vec.bin', model_type='fasttext')
+>>> word_embedding.doesnt_match(['سلام', 'درود', 'خداحافظ', 'پنجره'])
 'پنجره'
->>> word_embedding.doesnt_match(['ساعت' ,'پلنگ' ,'شیر'])
+>>> word_embedding.doesnt_match(['ساعت', 'پلنگ', 'شیر'])
 'ساعت'
 
+# Dependency Parser
 >>> parser = DependencyParser(tagger=tagger, lemmatizer=lemmatizer)
 >>> parser.parse(word_tokenize('زنگ‌ها برای که به صدا درمی‌آید؟'))
 <DependencyGraph with 8 nodes>
 
->>> spacy_parser = SpacyDependencyParser(tagger=tagger, lemmatizer=lemmatizer)
->>> spacy_parser.parse_sents([word_tokenize('زنگ‌ها برای که به صدا درمی‌آید؟')])
-
+# NER
+>>> from hazm.ner import HazmNER
 >>> ner = HazmNER(model_path='ner/model-best')
 >>> ner.predict_entity('حمله سایبری به سامانه سوخت در دولت سیزدهم برای بار دوم اتفاق افتاد، حادثه‌ای که در سال 1400 هم به وقوع پیوست اما رفع این مشکل بیش از یک هفته زمان برد، در حالی که آذر امسال پس از این حمله همه پمپ‌بنزین‌ها در کمتر از 24 ساعت فعالیت خود را از سر گرفتند.')
 >>> ner.predict(
