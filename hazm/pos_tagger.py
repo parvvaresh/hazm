@@ -209,7 +209,7 @@ class SpacyPOSTagger(POSTagger):
             words = [word for word, _ in sent]
             tags = [tag for _, tag in sent]
             doc = Doc(Vocab(strings=words), words=words)
-            for d, tag in zip(doc, tags, strict=True):
+            for d, tag in zip(doc, tags, strict=False):
                 d.tag_ = tag
             db.add(doc)
 
@@ -234,7 +234,7 @@ class SpacyPOSTagger(POSTagger):
         else:
             tags = [tok.tag_ for tok in doc]
 
-        return list(zip(tokens, tags, strict=True))
+        return list(zip(tokens, tags, strict=False))
 
     def tag_sents(
         self,
@@ -256,12 +256,12 @@ class SpacyPOSTagger(POSTagger):
         )
 
         result = []
-        for sent, doc in zip(sents, docs, strict=True):
+        for sent, doc in zip(sents, docs, strict=False):
             if universal_tag:
                 tags = [tok.tag_.replace(",EZ", "") for tok in doc]
             else:
                 tags = [tok.tag_ for tok in doc]
-            result.append(list(zip(sent, tags, strict=True)))
+            result.append(list(zip(sent, tags, strict=False)))
 
         return result
 
@@ -347,7 +347,7 @@ class SpacyPOSTagger(POSTagger):
                 return "EZ" if "EZ" in tag else "-"
             return tag.replace(",EZ", "")
 
-        for preds, gold_labels in zip(predictions, golds, strict=True):
+        for preds, gold_labels in zip(predictions, golds, strict=False):
             for pred in preds:
                 predictions_cleaned.append(clean_tag(pred))
             for gold in gold_labels:

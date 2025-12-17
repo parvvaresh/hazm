@@ -20,7 +20,7 @@ NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 
 def maketrans(a: str, b: str) -> dict[int, Any]:
     """هر یک از حروف رشتهٔ a را به یک حرف در رشتهٔ b مپ می‌کند."""
-    return {ord(a): b for a, b in zip(a, b, strict=True)}
+    return {ord(a): b for a, b in zip(a, b, strict=False)}
 
 def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, tuple[str, ...]]]:
     """لیست کلمات را برمی‌گرداند."""

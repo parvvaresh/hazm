@@ -59,7 +59,7 @@ class Conjugation:
         """فعل را در زمان گذشتهٔ استمراری صرف می‌کند."""
         return [
             x + " " + y
-            for x, y in zip(self.perfective_past("داشت"), self.imperfective_past(ri), strict=True)
+            for x, y in zip(self.perfective_past("داشت"), self.imperfective_past(ri), strict=False)
         ]
 
     def passive_past_progresive(self, ri: str) -> list[str]:
@@ -69,7 +69,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.passive_imperfective_past(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -179,7 +179,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.imperfective_present_perfect(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -190,7 +190,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.passive_imperfective_present_perfect(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -233,7 +233,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.imperfective_past_precedent(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -244,7 +244,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_past("داشت"),
                 self.passive_imperfective_past_precedent(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -366,7 +366,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.imperfective_past_precedent_perfect(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -377,7 +377,7 @@ class Conjugation:
             for x, y in zip(
                 self.present_perfect("داشت"),
                 self.passive_imperfective_past_precedent_perfect(ri),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -465,7 +465,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_present("دار"),
                 self.imperfective_present(rii),
-                strict=True,
+                strict=False,
             )
         ]
 
@@ -476,7 +476,7 @@ class Conjugation:
             for x, y in zip(
                 self.perfective_present("دار"),
                 self.passive_imperfective_present(ri),
-                strict=True,
+                strict=False,
             )
         ]
 

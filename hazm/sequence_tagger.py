@@ -60,7 +60,7 @@ def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
             iob_features(words=word_tokens, pos_tags=tag_tokens, index=index)
             for index in range(len(word_tokens))
         ]
-        for word_tokens, tag_tokens in zip(words, tags, strict=True)
+        for word_tokens, tag_tokens in zip(words, tags, strict=False)
     ]
 
 
@@ -91,7 +91,7 @@ class SequenceTagger:
         features_list = self.data_maker([tokens])[0]
         tags = self.model.tag(features_list)
 
-        return list(zip(tokens, tags, strict=True))
+        return list(zip(tokens, tags, strict=False))
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
         """لیستی از جملات را برچسب‌گذاری می‌کند."""
@@ -100,9 +100,9 @@ class SequenceTagger:
 
         features_lists = self.data_maker(sentences)
         results = []
-        for tokens, feats in zip(sentences, features_lists, strict=True):
+        for tokens, feats in zip(sentences, features_lists, strict=False):
             tags = self.model.tag(feats)
-            results.append(list(zip(tokens, tags, strict=True)))
+            results.append(list(zip(tokens, tags, strict=False)))
         return results
 
     def train(
@@ -128,7 +128,7 @@ class SequenceTagger:
         labels = [[y for _, y in sent] for sent in tagged_list]
         features_data = self.data_maker(inputs)
 
-        for xseq, yseq in zip(features_data, labels, strict=True):
+        for xseq, yseq in zip(features_data, labels, strict=False):
             trainer.append(xseq, yseq)
 
         start_time = time.time()
@@ -178,7 +178,7 @@ class IOBTagger(SequenceTagger):
         """فرمت خروجی را به صورت (word, pos, chunk) در می‌آورد."""
         return [
             (token[0], token[1], chunk_tag[1])
-            for token, chunk_tag in zip(tagged_data, chunk_tags, strict=True)
+            for token, chunk_tag in zip(tagged_data, chunk_tags, strict=False)
         ]
 
     def tag(self, tagged_data: TaggedSentence) -> ChunkedSentence:
@@ -191,7 +191,7 @@ class IOBTagger(SequenceTagger):
         chunk_tags_list = super().tag_sents(sentences)
         return [
             self.__iob_format(tagged_data, chunks)
-            for tagged_data, chunks in zip(sentences, chunk_tags_list, strict=True)
+            for tagged_data, chunks in zip(sentences, chunk_tags_list, strict=False)
         ]
 
     def train(

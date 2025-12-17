@@ -59,7 +59,7 @@ class InformalNormalizer(Normalizer):
             fv = self.lemmatizer.conjugation.get_all(f)
             res = {}
             if flag:
-                for key, value in zip(iv, fv[48:], strict=True):
+                for key, value in zip(iv, fv[48:], strict=False):
                     res[key] = value
                     if "‌" in key:
                         res[key.replace("‌", "")] = value
@@ -67,7 +67,7 @@ class InformalNormalizer(Normalizer):
                     if key.endswith("ین"):
                         res[key[:-1] + "د"] = value
             else:
-                for key, value in zip(iv[8:], fv[56:], strict=True):
+                for key, value in zip(iv[8:], fv[56:], strict=False):
                     res[key] = value
                     if "‌" in key:
                         res[key.replace("‌", "")] = value

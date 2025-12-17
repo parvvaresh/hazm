@@ -72,7 +72,7 @@ class Chunker(IOBTagger):
                 self.features(words=word_tokens, pos_tags=tag_tokens, index=index)
                 for index in range(len(word_tokens))
             ]
-            for word_tokens, tag_tokens in zip(words, tags, strict=True)
+            for word_tokens, tag_tokens in zip(words, tags, strict=False)
         ]
 
     def features(
@@ -232,7 +232,7 @@ class SpacyChunker(Chunker):
             # Here we map chunk tags to tag_ attribute as per original code logic for simplicity,
             # though standard way is using ents for chunks.
             doc = Doc(Vocab(strings=words), words=words)
-            for d, tag in zip(doc, tags, strict=True):
+            for d, tag in zip(doc, tags, strict=False):
                 d.tag_ = tag
             db.add(doc)
 
@@ -308,7 +308,7 @@ class SpacyChunker(Chunker):
         golds_tree = [conlltags2tree(sent) for sent in golds]
 
         chunkscore = ChunkScore()
-        for pred, correct in zip(preds_tree, golds_tree, strict=True):
+        for pred, correct in zip(preds_tree, golds_tree, strict=False):
             chunkscore.score(correct, pred)
 
         print("Accuracy:", chunkscore.accuracy())
@@ -331,7 +331,7 @@ class SpacyChunker(Chunker):
         tags = [tag for _, tag in sentence]
         preds = [w.tag_ for w in doc] # Assuming model predicts chunks in tag_
 
-        chunk = list(zip(words, tags, preds, strict=True))
+        chunk = list(zip(words, tags, preds, strict=False))
         return conlltags2tree(chunk)
 
     def parse_sents(
@@ -357,5 +357,5 @@ class SpacyChunker(Chunker):
             words = [w for w, _ in sentences[i]]
             tags = [tag for _, tag in sentences[i]]
             preds = [w.tag_ for w in doc]
-            chunk = list(zip(words, tags, preds, strict=True))
+            chunk = list(zip(words, tags, preds, strict=False))
             yield conlltags2tree(chunk)

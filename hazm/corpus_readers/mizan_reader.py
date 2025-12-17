@@ -61,4 +61,4 @@ class MizanReader:
         Yields:
             جملهٔ بعدی در قالب یک زوج `(جملهٔ انگلیسی، جملهٔ فارسی)`.
         """
-        yield from zip(self.english_sentences(), self.persian_sentences(), strict=True)
+        yield from zip(self.english_sentences(), self.persian_sentences(), strict=False)
