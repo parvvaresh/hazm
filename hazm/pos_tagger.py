@@ -35,11 +35,34 @@ class POSTagger(SequenceTagger, TaggerProtocol):
         model: str | Path | None = None,
         data_maker: Any = None,
         universal_tag: bool = False,
+        repo_id: str | None = None,
+        model_filename: str | None = None,
     ) -> None:
-        """Constructor."""
+        """Constructor.
+
+        Args:
+            model: Path to the local model file.
+            data_maker: Custom data maker function.
+            universal_tag: Whether to use universal POS tags.
+            repo_id: Hugging Face repository ID (e.g., "roshan-research/hazm-postagger").
+            model_filename: Filename inside the repository (e.g., "pos_tagger.model").
+        """
         final_data_maker = data_maker if data_maker is not None else self.data_maker
         self.__is_universal = universal_tag
-        super().__init__(model, final_data_maker)
+
+        # Resolve model path logic
+        final_model_path = model
+
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import hf_hub_download
+                final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+            except ImportError:
+                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except Exception as e:
+                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+
+        super().__init__(final_model_path, final_data_maker)
 
     def __universal_converter(self, tagged_list: TaggedSentence) -> TaggedSentence:
         return [(word, tag.split(",")[0]) for word, tag in tagged_list]
@@ -149,6 +172,8 @@ class SpacyPOSTagger(POSTagger):
         model_path: str | Path | None = None,
         using_gpu: bool = False,
         gpu_id: int = 0,
+        repo_id: str | None = None,
+        model_filename: str | None = None, # این آرگومان برای اس‌پی‌سی معمولا نیاز نیست چون کل پوشه مدل لود می‌شود
     ) -> None:
         """Initialize."""
         super().__init__(universal_tag=True)
@@ -157,11 +182,21 @@ class SpacyPOSTagger(POSTagger):
         self.gpu_id = gpu_id
         self.tagger = None
         self.gpu_availability = False
+        
+        if repo_id:
+            try:
+                from huggingface_hub import snapshot_download
+                self.model_path = snapshot_download(repo_id=repo_id)
+            except ImportError:
+                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except Exception as e:
+                raise ValueError(f"Failed to download model from {repo_id}: {e}")
 
         self.peykare_dict: dict[str, list[str]] = {}
 
         if self.model_path:
              self._setup()
+
 
     def _setup(self) -> None:
         """Set up GPU and Load Model."""

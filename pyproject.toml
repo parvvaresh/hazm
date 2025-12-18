@@ -38,6 +38,7 @@ flashtext = "^2.7"
 spacy = "^3.8.11"
 tqdm = "^4.67.1"
 smart-open = "^7.5.0"
+huggingface-hub = "^1.2.3"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs="^1.6.1"

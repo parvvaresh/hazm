@@ -55,11 +55,33 @@ class Chunker(IOBTagger):
         self,
         model: str | Path | None = None,
         data_maker: Any = None,
+        repo_id: str | None = None,
+        model_filename: str | None = None,
     ) -> None:
-        """Constructor."""
+        """Constructor.
+
+        Args:
+            model: Path to the local model file.
+            data_maker: Custom data maker function.
+            repo_id: Hugging Face repository ID (e.g., "roshan-research/hazm-chunker").
+            model_filename: Filename inside the repository (e.g., "chunker.model").
+        """
         final_data_maker = data_maker if data_maker is not None else self.data_maker
         self.posTagger = POSTagger()
-        super().__init__(model, final_data_maker)
+
+        # Resolve model path logic
+        final_model_path = model
+
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import hf_hub_download
+                final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+            except ImportError:
+                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except Exception as e:
+                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+
+        super().__init__(final_model_path, final_data_maker)
 
     def data_maker(self, tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
         """تبدیل توکن‌ها به ویژگی‌ها."""
@@ -170,6 +192,8 @@ class SpacyChunker(Chunker):
         model_path: str | Path | None = None,
         using_gpu: bool = False,
         gpu_id: int = 0,
+        repo_id: str | None = None,
+        model_filename: str | None = None,
     ) -> None:
         """Initialize."""
         super().__init__()
@@ -178,10 +202,21 @@ class SpacyChunker(Chunker):
         self.gpu_id = gpu_id
         self.model = None
         self.gpu_availability = False
+        
+        if repo_id:
+            try:
+                from huggingface_hub import snapshot_download
+                self.model_path = snapshot_download(repo_id=repo_id)
+            except ImportError:
+                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except Exception as e:
+                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+
         self.peykare_dict: dict[str, list[str]] = {}
 
         if self.model_path:
             self._setup()
+
 
     def _setup(self) -> None:
         if self.using_gpu:
