@@ -214,24 +214,31 @@ class SentEmbedding:
     @classmethod
     def load(
         cls,
-        model_path: str | None = None,
+        model_path: str | Path | None = None,
         repo_id: str | None = None,
         model_filename: str | None = None,
     ) -> "SentEmbedding":
         
+        final_model_path = model_path
+
         if repo_id and model_filename:
             try:
-                from huggingface_hub import hf_hub_download
-                model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+                from huggingface_hub import snapshot_download
+                from pathlib import Path
+                
+                cache_dir = snapshot_download(repo_id=repo_id)
+                
+                final_model_path = Path(cache_dir) / model_filename
+                
             except ImportError:
                 raise ImportError("Please install `huggingface-hub`.")
             except Exception as e:
                 raise ValueError(f"Failed to download from {repo_id}: {e}")
 
-        if not model_path:
+        if not final_model_path:
              raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
 
-        model = Doc2Vec.load(str(model_path))
+        model = Doc2Vec.load(str(final_model_path))
         return cls(model)
 
     def train(
