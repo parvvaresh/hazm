@@ -33,57 +33,56 @@ class WordEmbedding:
         self.model_type = model_type
 
     @classmethod
-    def load(cls, model_path: str | Path, model_type: str) -> "WordEmbedding":
+    def load(
+        cls,
+        model_path: str | Path | None = None,
+        model_type: str = "fasttext",
+        repo_id: str | None = None,
+        model_filename: str | None = None,
+    ) -> "WordEmbedding":
         """Factory method to load the model."""
+        
+        final_model_path = model_path
+
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import hf_hub_download, snapshot_download
+                
+                if model_type == "fasttext":
+                     final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+                else:
+                     cache_dir = snapshot_download(repo_id=repo_id)
+                     final_model_path = Path(cache_dir) / model_filename
+
+            except ImportError:
+                raise ImportError("Please install `huggingface-hub`.")
+            except Exception as e:
+                raise ValueError(f"Failed to download from {repo_id}: {e}")
+
+        if not final_model_path:
+             raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
+
         if model_type not in SUPPORTED_EMBEDDINGS:
             msg = f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}'
             raise KeyError(msg)
 
-        model_path = str(model_path)
+        final_model_path = str(final_model_path)
         model = None
 
         if model_type == "fasttext":
-            model = load_facebook_model(model_path).wv
+            model = load_facebook_model(final_model_path).wv
         elif model_type == "keyedvector":
-         def load(cls,model_path: str | Path | None = None,
-        model_type: str = "fasttext",
-        repo_id: str | None = None,
-        model_filename: str | None = None) -> "WordEmbedding":
-            """Factory method to load the model from local path or Hugging Face."""
-            
-            if repo_id and model_filename:
-                try:
-                    from huggingface_hub import hf_hub_download
-                    model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
-                except ImportError:
-                    raise ImportError("Please install `huggingface-hub`.")
-                except Exception as e:
-                    raise ValueError(f"Failed to download from {repo_id}: {e}")
+            binary = final_model_path.endswith("bin")
+            model = KeyedVectors.load_word2vec_format(final_model_path, binary=binary)
+        elif model_type == "glove":
+            word2vec_addr = str(final_model_path) + "_word2vec_format.vec"
+            if not Path(word2vec_addr).exists():
+                logger.info("Converting Glove to Word2Vec format...")
+                glove2word2vec(final_model_path, word2vec_addr)
+            model = KeyedVectors.load_word2vec_format(word2vec_addr)
+            model_type = "keyedvector"
 
-            if not model_path:
-                raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
-
-            if model_type not in SUPPORTED_EMBEDDINGS:
-                raise KeyError(f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}')
-
-            model_path = str(model_path)
-            model = None
-
-            if model_type == "fasttext":
-                model = load_facebook_model(model_path).wv
-            elif model_type == "keyedvector":
-                binary = model_path.endswith("bin")
-                model = KeyedVectors.load_word2vec_format(model_path, binary=binary)
-            elif model_type == "glove":
-                word2vec_addr = str(model_path) + "_word2vec_format.vec"
-                if not Path(word2vec_addr).exists():
-                    logger.info("Converting Glove to Word2Vec format...")
-                    glove2word2vec(model_path, word2vec_addr)
-                model = KeyedVectors.load_word2vec_format(word2vec_addr)
-                model_type = "keyedvector"
-
-            return cls(model, model_type)
-
+        return cls(model, model_type)
 
     def train(
         self,
@@ -227,7 +226,6 @@ class SentEmbedding:
                 from pathlib import Path
                 
                 cache_dir = snapshot_download(repo_id=repo_id)
-                
                 final_model_path = Path(cache_dir) / model_filename
                 
             except ImportError:
