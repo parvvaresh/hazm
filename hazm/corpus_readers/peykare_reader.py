@@ -149,7 +149,7 @@ def coarse_pos_u(tags: list[str], word: str) -> list[str]:
         return "NOUN"
 
 
-def coarse_pos_e(tags: list[str], word) -> list[str]: # noqa: ARG001
+def coarse_pos_e(tags: list[str], word:str) -> list[str]: # noqa: ARG001
     """Converts fine-grained tags to coarse-grained POS tags.
 
     Examples:

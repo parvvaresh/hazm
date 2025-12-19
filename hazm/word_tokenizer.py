@@ -1,6 +1,4 @@
 """This module includes classes and functions for extracting words from text.
-
-To extract sentences, use the [SentenceTokenizer()][hazm.SentenceTokenizer] function.
 """
 
 import re
