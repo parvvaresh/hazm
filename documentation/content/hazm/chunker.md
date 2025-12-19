@@ -7,6 +7,8 @@
     options:
         members: 
             - Chunker 
+            - RuleBasedChunker
+            - SpacyChunker
             - tree2brackets
         show_root_heading: false
         show_source: false
