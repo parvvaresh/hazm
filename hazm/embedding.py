@@ -6,10 +6,10 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import fasttext as fstxt
 import numpy as np
 import smart_open
 from gensim.models import Doc2Vec
+from gensim.models import FastText
 from gensim.models import KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
 from gensim.models.doc2vec import TaggedDocument
@@ -55,15 +55,15 @@ class WordEmbedding:
                      final_model_path = Path(cache_dir) / model_filename
 
             except ImportError as e:
-                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                msg = f"Failed to import huggingface-hub: {e}"
                 raise ImportError(msg) from e
             except Exception as e:
                 msg = f"Failed to download from {repo_id}: {e}"
                 raise ValueError(msg) from e
 
         if not final_model_path:
-                msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
-                raise ValueError(msg)
+             msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+             raise ValueError(msg)
 
         if model_type not in SUPPORTED_EMBEDDINGS:
             msg = f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}'
@@ -73,10 +73,17 @@ class WordEmbedding:
         model = None
 
         if model_type == "fasttext":
-            model = load_facebook_model(final_model_path).wv
+            # Gensim capability to load Facebook's binary format
+            try:
+                model = load_facebook_model(final_model_path).wv
+            except Exception:
+                # Fallback: maybe it's a native gensim model
+                model = FastText.load(final_model_path).wv
+
         elif model_type == "keyedvector":
             binary = final_model_path.endswith("bin")
             model = KeyedVectors.load_word2vec_format(final_model_path, binary=binary)
+
         elif model_type == "glove":
             word2vec_addr = str(final_model_path) + "_word2vec_format.vec"
             if not Path(word2vec_addr).exists():
@@ -95,33 +102,35 @@ class WordEmbedding:
         epochs: int = 10,
         min_count: int = 5,
         fasttext_type: str = "skipgram",
-        dest_path: str = "fasttext_word2vec_model.bin",
+        dest_path: str = "fasttext_word2vec_model.model",
     ) -> None:
-        """آموزش مدل (فقط برای FastText در حال حاضر)."""
-        if self.model_type != "fasttext":
-            warnings.warn(f"Training is only supported for fasttext, not {self.model_type}", stacklevel=2)
-
-        if fasttext_type not in ["cbow", "skipgram"]:
-             msg = f'Invalid fasttext_type "{fasttext_type}"'
-             raise KeyError(msg)
-
+        """آموزش مدل با استفاده از Gensim FastText."""
+        # sg=1 for skipgram, sg=0 for cbow
+        sg = 1 if fasttext_type == "skipgram" else 0
         workers = max(1, workers)
 
-        logger.info("Training model...")
-        self.model = fstxt.train_unsupervised(
-            dataset_path,
-            model=fasttext_type,
-            dim=vector_size,
-            epoch=epochs,
-            thread=workers,
+        logger.info("Training model with Gensim...")
+
+        corpus = SentenceEmbeddingCorpus(dataset_path)
+        sentences = (doc.words for doc in corpus)
+
+        model = FastText(
+            vector_size=vector_size,
+            window=5,
             min_count=min_count,
+            workers=workers,
+            sg=sg,
+            epochs=epochs,
         )
+
+        model.build_vocab(corpus_iterable=sentences)
+        model.train(corpus_iterable=sentences, total_examples=model.corpus_count, epochs=epochs)
+
         logger.info("Model trained.")
-
         logger.info("Saving model to %s...", dest_path)
-        self.model.save_model(dest_path)
+        model.save(dest_path)
 
-        self.model = fstxt.load_facebook_model(dest_path).wv
+        self.model = model.wv
 
     def __getitem__(self, word: str) -> ndarray:
         if not self.model:
@@ -184,7 +193,7 @@ class SentenceEmbeddingCorpus:
         self.data_path = data_path
 
     def __iter__(self) -> Iterator[TaggedDocument]:
-        for i, list_of_words in enumerate(smart_open.open(self.data_path)):
+        for i, list_of_words in enumerate(smart_open.open(self.data_path, encoding="utf-8")):
             yield TaggedDocument(
                 word_tokenize(Normalizer().normalize(list_of_words)),
                 [i],
@@ -233,7 +242,7 @@ class SentEmbedding:
                 final_model_path = Path(cache_dir) / model_filename
 
             except ImportError as e:
-                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                msg = f"Failed to download from {repo_id}: {e}"
                 raise ImportError(msg) from e
             except Exception as e:
                 msg = f"Failed to download from {repo_id}: {e}"
