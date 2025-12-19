@@ -114,10 +114,6 @@ nav:
           - faspell_reader: content/hazm/corpus_readers/faspell_reader.md
           - pn_summary_reader: content/hazm/corpus_readers/pn_summary_reader.md
 
-  - کاربردهای هضم:
-      - content/samples/index.md
-      - استخراج کلمات کلیدی: content/samples/keyword_extraction.md
-
   - سایر بخش‌ها:
       - هضم در زبان‌های دیگر: content/in-other-languages.md
 
