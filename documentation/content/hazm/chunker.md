@@ -1,6 +1,6 @@
 !!! Note ""
 
-   The accuracy of the shallow parser in the current version is {{chunker_evaluation_value}}%.
+    The accuracy of the shallow parser in the current version is {{chunker_evaluation_value}}%.
 
 ::: hazm.chunker
     handler: python

@@ -1,7 +1,4 @@
-"""This module contains classes and functions for sentence tokenization.
-
-Use [WordTokenizer()][hazm.WordTokenizer] for word tokenization.
-"""
+"""This module contains classes and functions for sentence tokenization."""
 
 
 import re
