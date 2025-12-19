@@ -1,12 +1,8 @@
-# پیکره‌خوان‌ها
+# Corpus Readers
 
-پردازش زبان طبیعی نیازمند داده است. این داده‌ها که غالباً تحت عنوان «پیکره»
-شناخته می‌شوند برای استخراج الگوها و یادگیری ماشین ضروری هستند. خواندن این
-پیکره‌ها و تبدیل داده‌های خام به قالبی مناسب برای استفاده از آن‌ها در پردازش
-زبان طبیعی نیازمند صرف وقتی جدا برای کدنویسی و پردازش این داده‌های خام است. ما
-برای صرفه‌جویی در وقت شما، کلاس‌ها و توابعی تهیه کرده‌ایم که به‌راحتی می‌توانید
-پیکره‌های معروف فارسی را بخوانید. کلاس‌ها و توابعِ این بخش صرفاً برای تسهیل کار
-توسعه‌دهندگان تهیه شده است و اساساً جزئی در کتابخانهٔ هضم به شمار نمی‌روند.
+Natural language processing requires data. This data, often referred to as "corpora," is essential for pattern extraction and machine learning. Reading these corpora and converting raw data into a format suitable for NLP tasks usually requires additional time for coding and preprocessing.  
+
+To save you time, we have provided classes and functions that make it easy to read popular Persian corpora. The classes and functions in this section are provided solely to facilitate developers' work and are not considered a core part of the Hazm library.
 
 ## [hamshahri_reader](./hamshahri_reader.md)
 

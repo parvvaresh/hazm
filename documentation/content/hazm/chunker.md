@@ -1,6 +1,6 @@
 !!! Note ""
 
-    دقت تجزیه‌گر سطحی در نسخهٔ حاضر {{chunker_evaluation_value | to_persian_numeral}} درصد است. 
+   The accuracy of the shallow parser in the current version is {{chunker_evaluation_value}}%.
 
 ::: hazm.chunker
     handler: python

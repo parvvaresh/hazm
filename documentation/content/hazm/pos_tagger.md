@@ -1,6 +1,6 @@
 !!! Note ""
 
-    دقت برچسب‌گذاری در نسخهٔ حاضر {{posTagger_evaluation_value | to_persian_numeral}} درصد است. 
+    The accuracy of the POS tagger in the current version is {{ posTagger_evaluation_value }}%.
 
 ::: hazm.pos_tagger
     handler: python

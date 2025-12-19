@@ -1,8 +1,8 @@
-کتابخانهٔ اصلی هضم با زبان پایتون توسعه داده شده است؛ با این حال، برخی از برنامه‌نویسان این کتابخانه را در زبان‌های دیگری مثل جاوا و سی‌شارپ پیاده‌سازی کرده‌اند. در این بخش، سایر پیاده‌سازی‌های هضم را در زبان‌های دیگر معرفی می‌کنیم. لطفاً اگر موردی سراغ داشتید که در این صفحه نبود با ویرایش صفحه به آن اضافه کنید.
+The main Hazm library is developed in Python; however, some developers have implemented this library in other languages such as Java and C#. In this section, we introduce other Hazm implementations in different languages. Please feel free to add any implementations you know that are not listed here by editing this page.
 
-!!! warning "سلب مسئولیت"
-        مسئولیتِ توسعه و پیگیری مشکلاتِ این کتابخانه‌ها بر عهدهٔ توسعه‌دهنده(گان) آن است. روشن از کارکرد این کتابخانه‌ها اطلاعی ندارد و صرفاً آن‌ها را معرفی می‌کند.
+!!! warning "Disclaimer"
+        The development and maintenance of these libraries are the responsibility of their respective developers. Roshan is not responsible for their functionality and only introduces them.
 
-- :fontawesome-brands-java: [JHazm](https://github.com/mojtaba-khallash/JHazm): نسخهٔ جاوای هضم
+- :fontawesome-brands-java: [JHazm](https://github.com/mojtaba-khallash/JHazm): Hazm implementation in Java
 
-- :material-language-csharp: [NHazm](https://github.com/mojtaba-khallash/NHazm): نسخهٔ سی‌شارپ هضم
+- :material-language-csharp: [NHazm](https://github.com/mojtaba-khallash/NHazm): Hazm implementation in C#

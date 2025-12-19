@@ -1,47 +1,65 @@
-## معرفی هضم
+# Hazm: Persian NLP Toolkit
 
-[هضم](https://www.roshan-ai.ir/hazm) **کتابخانه‌ای پایتونی برای پردازش زبان
-فارسی** است. با هضم می‌توانید متن را نرمال‌سازی کنید. جملات و واژه‌های متن را
-استخراج کنید. ریشهٔ کلمات را پیدا کنید. جملات را تحلیل صرفی و نحوی کنید.
-وابستگی‌های دستوری را در متن شناسایی کنید و ... .
+[Hazm](https://www.roshan-ai.ir/hazm) is a **comprehensive Python library for processing the Persian language**. It provides tools for text normalization, sentence and word tokenization, stemming, lemmatization, part-of-speech tagging, syntactic dependency parsing, and more.
 
-!!! info "مبتنی بر کتابخانهٔ nltk و سازگار با پایتون {{needed_python_version() | to_persian_numeral}}"
-هضم بر مبنای کتابخانهٔ [NLTK](https://www.nltk.org/) توسعه داده شده و برای
-**زبان فارسی** بومی‌سازی شده است. هضم با پایتون {{needed_python_version() | to_persian_numeral}} سازگار است.
+!!! info "Compatible with Python {{needed_python_version()}}"
+    Hazm is built on top of the [NLTK](https://www.nltk.org/) library and is specifically optimized for the Persian language. It is fully compatible with Python {{needed_python_version()}}.
 
-!!! info "محصولی از تیم روشن"
-این کتابخانه در ابتدا به عنوان پروژه‌ای شخصی توسعه داده شد و اکنون زیر چتر
-[محصولات روشن](https://www.roshan-ai.ir/) در ادامهٔ مسیر توسعه است.
+!!! info "Maintained by Roshan"
+    Originally started as a personal project, Hazm is now developed and maintained under the [Roshan AI](https://www.roshan-ai.ir/) team.
 
 <figure markdown>
-  ![کتابخانهٔ هضم](assets/sample.png){ loading=lazy }
-  <figcaption></figcaption>
+  ![Hazm library](assets/sample.png){ loading=lazy }
+  <figcaption>Persian Natural Language Processing made easy with Hazm</figcaption>
 </figure>
 
-## نصب هضم
+## Installation
 
-ابتدا پکیج هضم را نصب کنید:
+You can install Hazm using pip:
 
 ```console
 $ pip install hazm
 ```
 
-سپس [منابع موردنظر را دانلود کنید]({{pretrained_models}}) و ترجیحاً در ریشهٔ پروژه اکسترکت کنید.
+## Pretrained Models
 
-و در آخر، هضم را را در پروژه خود ایمپورت کنید:
+Hazm requires pretrained models for advanced tasks such as POS tagging, Chunking, and Dependency Parsing. There are two ways to use these models:
 
-```py
+### 1. Automatic Loading (Hugging Face Hub)
+The latest version of Hazm integrates directly with the **Hugging Face Hub**. You can load models automatically by providing the `repo_id` and `model_filename`:
+
+```python
+from hazm import POSTagger
+
+# This will automatically download and cache the model from Hugging Face
+tagger = POSTagger(
+    repo_id="roshan-research/hazm-postagger", 
+    model_filename="pos_tagger.model"
+)
+```
+
+### 2. Manual Loading
+If you prefer to work offline, you can [download the models]({{pretrained_models}}) manually and provide the local path to the constructor:
+
+```python
+from hazm import POSTagger
+
+# Provide the local path to the downloaded model file
+tagger = POSTagger(model="path/to/your/pos_tagger.model")
+```
+
+## Quick Start
+
+Import Hazm into your project and start processing Persian text immediately:
+
+```python
 from hazm import *
 ```
 
-## استفاده از هضم
-
-کد پایین دیدی کلی از کاربردهای هضم نشان می‌دهد:
-
 {{hazm_code_example()}}
 
-جزئیات بیشترِ این توابع را در بخش [کلاس‌ها و توابع](content/hazm/index.md) پی بگیرید.
-هضم علاوه بر کلاس‌ها و توابع مختص خود، کلاس‌ها و توابعی نیز برای خواندن
-پیکره‌های مشهور دارد که می‌توانید توضیحات هریک از آن‌ها را در بخش
-[پیکره‌خوان‌ها ](content/hazm/corpus_readers/index.md)بخوانید. هضم مبتنی بر پایتون است؛ با این حال
-نسخه‌هایی از این کتابخانه به زبان‌های دیگر [پورت شده است](content/in-other-languages.md).
+## Next Steps
+
+*   Explore detailed documentation for each module in the **[Classes and Functions](content/hazm/index.md)** section.
+*   Learn how to work with various Persian corpora in the **[Corpus Readers](content/hazm/corpus_readers/index.md)** section.
+*   If you are looking for Hazm in other environments, check out the [Ports in Other Languages](content/in-other-languages.md) section.
