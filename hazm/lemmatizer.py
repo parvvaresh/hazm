@@ -136,7 +136,7 @@ class Conjugation:
         Returns:
             A list of conjugated verbs.
         """
-        return [ri + "ه " + x for x in self.negative_passive_imperfective_past("شد")]
+        return [ri + "ه " + x for x in self.negative_imperfective_past("شد")]
 
     def past_progresive(self, ri: str) -> list[str]:
         """Conjugates the verb in the past continuous tense.
@@ -659,7 +659,7 @@ class Conjugation:
         Returns:
             A list of conjugated verbs.
         """
-        return [ri + "ه " + x for x in self.negative_passive_imperfective_past_precedent("شد")]
+        return [ri + "ه " + x for x in self.negative_imperfective_past_precedent("شد")]
 
     def past_precedent_progressive(self, ri: str) -> list[str]:
         """Conjugates the verb in the past perfect continuous tense.
@@ -1555,7 +1555,7 @@ class Conjugation:
         Returns:
             A list of conjugated verbs.
         """
-        return [ri + "ه " + x for x in self.negative_passive_future_precedent("شد")]
+        return [ri + "ه " + x for x in self.negative_future_precedent("شد")]
 
     def future_precedent_imperfective(self, ri: str) -> list[str]:
         """Conjugates the verb in the future perfect progressive tense.

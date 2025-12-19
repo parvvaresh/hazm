@@ -1,5 +1,4 @@
-"""This module includes classes and functions for extracting words from text.
-"""
+"""This module includes classes and functions for extracting words from text."""
 
 import re
 from pathlib import Path
