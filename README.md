@@ -1,22 +1,96 @@
-# Hazm - Persian NLP Toolkit [![](https://img.shields.io/twitter/follow/roshan_ai?label=follow)](https://twitter.com/roshan_ai)
+# Hazm - Persian NLP Toolkit
 
 ![Tests](https://img.shields.io/github/actions/workflow/status/roshan-research/hazm/test.yml?branch=master)
 ![PyPI - Downloads](https://img.shields.io/github/downloads/roshan-research/hazm/total)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hazm)
 ![GitHub](https://img.shields.io/github/license/roshan-research/hazm)
 
-- [Evaluation](#Evaluation)
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Pretrained-Models](#pretrained-models)
-- [Usage](#usage)
-- [Documentation](#documentation)
-- [Hazm in other languages](#hazm-in-other-languages)
-- [Contribution](#contribution)
-- [Thanks](#thanks)
-  - [Code contributores](#code-contributores)
-  - [Others](#others)
+## Introduction
+
+[**Hazm**](https://www.roshan-ai.ir/hazm/) is a python library to perform natural language processing tasks on Persian text. It offers various features for analyzing, processing, and understanding Persian text. You can use Hazm to normalize text, tokenize sentences and words, lemmatize words, assign part-of-speech tags, identify dependency relations, create word and sentence embeddings, or read popular Persian corpora.
+
+## Features
+
+- **Normalization:** Converts text to a standard form (diacritics removal, ZWNJ correction, etc).
+- **Tokenization:** Splits text into sentences and words.
+- **Lemmatization:** Reduces words to their base forms.
+- **POS tagging:** Assigns a part of speech to each word.
+- **Dependency parsing:** Identifies the syntactic relations between words.
+- **Embedding:** Creates vector representations of words and sentences.
+- **Hugging Face Integration:** Automatically download and cache pretrained models from the Hub.
+- **Persian corpora reading:** Easily read popular Persian corpora with ready-made scripts.
+
+## Installation
+
+To install the latest version of Hazm (requires Python 3.12+), run:
+
+    pip install hazm
+
+To use the pretrained models from Hugging Face, ensure you have the `huggingface-hub` package:
+
+    pip install huggingface-hub
+
+## Pretrained-Models
+
+Hazm supports automatic downloading of pretrained models. You can find all available models (POS Tagger, Chunker, Embeddings, etc.) on our official Hugging Face page:
+
+👉 [**Roshan Research on Hugging Face**](https://huggingface.co/roshan-research/models)
+
+When using Hazm, simply provide the `repo_id` and `model_filename` as shown in the examples below, and the library will handle the rest.
+
+## Usage
+
+```python
+from hazm import *
+
+# --- Normalizer ---
+normalizer = Normalizer()
+print(normalizer.normalize('اصلاح نويسه ها و استفاده از نیم‌فاصله پردازش را آسان مي كند'))
+# 'اصلاح نویسه‌ها و استفاده از نیم‌فاصله پردازش را آسان می‌کند'
+
+# --- Tokenizer ---
+print(sent_tokenize('ما هم برای وصل کردن آمدیم! ولی برای پردازش، جدا بهتر نیست؟'))
+# ['ما هم برای وصل کردن آمدیم!', 'ولی برای پردازش، جدا بهتر نیست؟']
+print(word_tokenize('ولی برای پردازش، جدا بهتر نیست؟'))
+# ['ولی', 'برای', 'پردازش', '،', 'جدا', 'بهتر', 'نیست', '؟']
+
+# --- Stemmer & Lemmatizer ---
+stemmer = Stemmer()
+print(stemmer.stem('کتاب‌ها')) # 'کتاب'
+
+lemmatizer = Lemmatizer()
+print(lemmatizer.lemmatize('می‌روم')) # 'رفت#رو'
+
+# --- POS Tagger (Automatic download from Hugging Face) ---
+tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
+print(tagger.tag(word_tokenize('ما بسیار کتاب می‌خوانیم')))
+# [('ما', 'PRO'), ('بسیار', 'ADV'), ('کتاب', 'N'), ('می‌خوانیم', 'V')]
+
+# --- Chunker (Automatic download from Hugging Face) ---
+chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
+tagged = tagger.tag(word_tokenize('کتاب خواندن را دوست داریم'))
+print(tree2brackets(chunker.parse(tagged)))
+# '[کتاب خواندن NP] [را POSTP] [دوست داریم VP]'
+
+# --- Word Embedding (Automatic download from Hugging Face) ---
+word_embedding = WordEmbedding.load(repo_id='roshan-research/hazm-word-embedding', model_filename='fasttext_skipgram_300.bin', model_type='fasttext')
+print(word_embedding.doesnt_match(['سلام', 'درود', 'خداحافظ', 'پنجره'])) # 'پنجره'
+
+# --- Sent Embedding (Automatic download from Hugging Face) ---
+sent_embedding = SentEmbedding.load(repo_id='roshan-research/hazm-sent-embedding', model_filename='sent2vec-naab.model')
+vector = sent_embedding.get_sentence_vector('این یک جمله نمونه برای تبدیل به بردار است.')
+print(sent_embedding.similarity('شیر حیوانی وحشی است', 'پلنگ از دیگر جانوران درنده است'))
+# 0.85 (مثلا)
+
+# --- Dependency Parser ---
+parser = DependencyParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-dependency-parser", model_filename="langModel.mco")
+graph = parser.parse(word_tokenize('زنگ‌ها برای که به صدا درمی‌آید؟'))
+print(graph)
+```
+
+## Documentation
+
+Visit https://roshan-ai.ir/hazm/docs to view the full documentation.
 
 ## Evaluation
 
@@ -46,141 +120,6 @@
 |                                | SENT Recall     | 99.38   |
 |                                | SENT F-Measure  | 99.11   |
 
-
-## Introduction
-
-[**Hazm**](https://www.roshan-ai.ir/hazm/) is a python library to perform natural language processing tasks on Persian text. It offers various features for analyzing, processing, and understanding Persian text. You can use Hazm to normalize text, tokenize sentences and words, lemmatize words, assign part-of-speech tags, identify dependency relations, create word and sentence embeddings, or read popular Persian corpora.
-
-## Features
-
-- **Normalization:** Converts text to a standard form, such as removing diacritics, correcting spacing, etc.
-- **Tokenization:** Splits text into sentences and words.
-- **Lemmatization:** Reduces words to their base forms.
-- **POS tagging:** Assigns a part of speech to each word.
-- **Dependency parsing:** Identifies the syntactic relations between words.
-- **Embedding:** Creates vector representations of words and sentences.
-- **Persian corpora reading:** Easily read popular Persian corpora with ready-made scripts and minimal code.
-
-## Installation
-
-To install the latest version of Hazm (requires Python 3.12+), run the following command in your terminal:
-
-    pip install hazm
-
-Alternatively, you can install the latest update from GitHub (this version may be unstable and buggy):
-
-    pip install git+https://github.com/roshan-research/hazm.git
-
-## Pretrained-Models
-
-Finally if you want to use our pretrained models, you can download it from the links below:
-
-| **Module name**                                                                                                                 | **Size** |
-| :------------------------------------------------------------------------------------------------------------------------------ | :------- |
-| [**Download WordEmbedding**](https://mega.nz/file/GqZUlbpS#XRYP5FHbPK2LnLZ8IExrhrw3ZQ-jclNSVCz59uEhrxY)                         | ~ 5 GB   |
-| [**Download SentEmbedding**](https://mega.nz/file/WzR0QChY#J1nG-HGq0UJP69VMY8I1YGl_MfEAFCo5iizpjofA4OY)                         | ~ 1 GB   |
-| [**Download POSTagger**](https://drive.google.com/file/d/1Q3JK4NVUC2t5QT63aDiVrCRBV225E_B3)                                     | ~ 18 MB  |
-| [**Download DependencyParser**](https://drive.google.com/file/d/1MDapMSUXYfmQlu0etOAkgP5KDiWrNAV6/view?usp=share_link) | ~ 15 MB  |
-| [**Download Chunker**](https://drive.google.com/file/d/16hlAb_h7xdlxF4Ukhqk_fOV3g7rItVtk)                                       | ~ 4 MB   |
-| [**Download spacy_pos_tagger_parsbertpostagger**](https://huggingface.co/roshan-research/spacy_pos_tagger_parsbertpostagger)    | ~ 630 MB   |
-| [**Download spacy_pos_tagger_parsbertpostagger_Trained_on_95%**](https://huggingface.co/roshan-research/spacy_pos_tagger_parsbertpostagger95)| ~ 630 MB   |
-| [**Download spacy_chunker_uncased_bert**](https://huggingface.co/roshan-research/spacy_chunker_uncased_bert)                    | ~ 650 MB   |
-| [**Download spacy_chunker_parsbert**](https://huggingface.co/roshan-research/spacy_chunker_parsbert)                            | ~ 630 MB   |
-| [**Download spacy_dependency_parser**](https://huggingface.co/roshan-research/spacy_dependency_parser)                          | ~ 630 MB   |
-
-## Usage
-
-```python
->>> from hazm import *
-
-# Normalizer
->>> normalizer = Normalizer()
->>> normalizer.normalize('اصلاح نويسه ها و استفاده از نیم‌فاصله پردازش را آسان مي كند')
-'اصلاح نویسه‌ها و استفاده از نیم‌فاصله پردازش را آسان می‌کند'
-
-# Tokenizer
->>> sent_tokenize('ما هم برای وصل کردن آمدیم! ولی برای پردازش، جدا بهتر نیست؟')
-['ما هم برای وصل کردن آمدیم!', 'ولی برای پردازش، جدا بهتر نیست؟']
->>> word_tokenize('ولی برای پردازش، جدا بهتر نیست؟')
-['ولی', 'برای', 'پردازش', '،', 'جدا', 'بهتر', 'نیست', '؟']
-
-# Stemmer & Lemmatizer
->>> stemmer = Stemmer()
->>> stemmer.stem('کتاب‌ها')
-'کتاب'
->>> lemmatizer = Lemmatizer()
->>> lemmatizer.lemmatize('می‌روم')
-'رفت#رو'
-
-# POS Tagger
->>> tagger = POSTagger(model='pos_tagger.model')
->>> tagger.tag(word_tokenize('ما بسیار کتاب می‌خوانیم'))
-[('ما', 'PRO'), ('بسیار', 'ADV'), ('کتاب', 'N'), ('می‌خوانیم', 'V')]
-
-# Spacy POS Tagger
->>> spacy_posTagger = SpacyPOSTagger(model_path='MODELPATH')
->>> spacy_posTagger.tag(tokens=['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
-[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
-
-# Chunker
->>> chunker = Chunker(model='chunker.model')
->>> tagged = tagger.tag(word_tokenize('کتاب خواندن را دوست داریم'))
->>> tree2brackets(chunker.parse(tagged))
-'[کتاب خواندن NP] [را POSTP] [دوست داریم VP]'
-
-# Spacy Chunker
->>> spacy_chunker = SpacyChunker(model_path='model_path')
->>> tree = spacy_chunker.parse(sentence=[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
->>> print(tree)
-(S
-  (NP نامه/NOUN,EZ ایشان/PRON)
-  (POSTP را/ADP)
-  (VP دریافت/NOUN داشتم/VERB)
-  ./PUNCT)
-
-# Word Embedding
->>> word_embedding = WordEmbedding.load(model_path='word2vec.bin', model_type='fasttext')
->>> word_embedding.doesnt_match(['سلام', 'درود', 'خداحافظ', 'پنجره'])
-'پنجره'
->>> word_embedding.doesnt_match(['ساعت', 'پلنگ', 'شیر'])
-'ساعت'
-
-# Dependency Parser
->>> parser = DependencyParser(tagger=tagger, lemmatizer=lemmatizer)
->>> parser.parse(word_tokenize('زنگ‌ها برای که به صدا درمی‌آید؟'))
-<DependencyGraph with 8 nodes>
-
-# NER
->>> from hazm.ner import HazmNER
->>> ner = HazmNER(model_path='ner/model-best')
->>> ner.predict_entity('حمله سایبری به سامانه سوخت در دولت سیزدهم برای بار دوم اتفاق افتاد، حادثه‌ای که در سال 1400 هم به وقوع پیوست اما رفع این مشکل بیش از یک هفته زمان برد، در حالی که آذر امسال پس از این حمله همه پمپ‌بنزین‌ها در کمتر از 24 ساعت فعالیت خود را از سر گرفتند.')
->>> ner.predict(
-    [
-      'ریو در ایران توسط شرکت سایپا از سال 1384 تا سال 1391 تولید شد',
-      'به جز ایالات متحده ، این خودرو در اروپا ، آمریکای جنوبی و آسیا هم فروش بالایی داشته است',
-      'این گاه شمار با قدمتی کمتر از دویست سال ، از جدیدترین گاه شمار های رایج به شمار می رود'
-      ]
-)
-
-```
-
-## Documentation
-
-Visit https://roshan-ai.ir/hazm/docs to view the full documentation.
-
-## Hazm in other languages
-
-**Disclaimer:** These ports are not developed or maintained by Roshan. They may not have the same functionality or quality as the original Hazm..
-
-- [**JHazm**](https://github.com/mojtaba-khallash/JHazm): A Java port of Hazm
-- [**NHazm**](https://github.com/mojtaba-khallash/NHazm): A C# port of Hazm
-
-## Contribution
-
-We welcome and appreciate any contributions to this repo, such as bug reports, feature requests, code improvements, documentation updates, etc. Please follow the [Contribution guideline](./CONTRIBUTION.md) when contributing. You can open an issue, fork the repo, write your code, create a pull request and wait for a review and feedback. Thank you for your interest and support in this repo!
-
-## Thanks
-
 ### Code contributores
 
 ![Alt](https://repobeats.axiom.co/api/embed/ae42bda158791645d143c3e3c7f19d8a68d06d08.svg "Repobeats analytics image")
@@ -188,9 +127,5 @@ We welcome and appreciate any contributions to this repo, such as bug reports, f
 <a href="https://github.com/roshan-research/hazm/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=roshan-research/hazm" />
 </a>
-
-### Others 
-
-- Thanks to [Virastyar](http://virastyar.ir/) project for providing the persian word list.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=roshan-research/hazm&type=Date)](https://star-history.com/#roshan-research/hazm&Date)
