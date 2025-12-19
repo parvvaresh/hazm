@@ -23,6 +23,22 @@ class Stemmer(StemmerI):
     def stem(self, word: str) -> str:
         """Finds the stem of the word.
 
+        Example:
+            >>> stemmer = Stemmer()
+            >>> stemmer.stem('کتابی')
+            'کتاب'
+            >>> stemmer.stem('کتاب‌ها')
+            'کتاب'
+            >>> stemmer.stem('کتاب‌هایی')
+            'کتاب'
+            >>> stemmer.stem('کتابهایشان')
+            'کتاب'
+            >>> stemmer.stem('اندیشه‌اش')
+            'اندیشه'
+            >>> stemmer.stem('خانۀ')
+            'خانه'
+
+
         Args:
             word: The input word to be stemmed.
 

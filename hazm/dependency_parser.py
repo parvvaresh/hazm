@@ -32,6 +32,15 @@ class MaltParser(NLTKMaltParser):
     ) -> None:
         """Constructor.
 
+        Examples:
+            >>> from hazm import POSTagger, Lemmatizer
+            >>> tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
+            >>> lemmatizer = Lemmatizer()
+            >>> # Loading from Hugging Face Hub
+            >>> parser = MaltParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-dependency-parser", model_filename="langModel.mco")
+            >>> # Loading from a local model file
+            >>> # parser = MaltParser(tagger=tagger, lemmatizer=lemmatizer, working_dir='universal_dependency_parser', model_file='langModel.mco')
+
         Args:
             tagger: The POS tagger instance.
             lemmatizer: The lemmatizer instance.
@@ -74,6 +83,12 @@ class MaltParser(NLTKMaltParser):
     def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
         """Returns the dependency graph.
 
+        Examples:
+            >>> graphs = parser.parse_sents([['من', 'به', 'مدرسه', 'رفتم', '.']])
+            >>> graph = next(graphs)
+            >>> print(graph.tree())
+            (رفتم من (به مدرسه) .)
+
         Args:
             sentences: A list of sentences to be parsed.
             verbose: If True, prints verbose output.
@@ -90,6 +105,12 @@ class MaltParser(NLTKMaltParser):
         verbose: bool = False,
     ) -> Iterator[DependencyGraph]:
         """Returns dependency graphs for input sentences.
+
+        Examples:
+            >>> tagged_sentences = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('رفتم', 'VERB'), ('.', 'PUNCT')]]
+            >>> graphs = parser.parse_tagged_sents(tagged_sentences)
+            >>> print(next(graphs).tree())
+            (رفتم من (به مدرسه) .)
 
         Args:
             sentences: A list of tagged sentences.
@@ -151,6 +172,15 @@ class SpacyDependencyParser(MaltParser):
         repo_id: str | None = None,
     ) -> None:
         """Initialize.
+
+        Examples:
+            >>> from hazm import POSTagger, Lemmatizer
+            >>> tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
+            >>> lemmatizer = Lemmatizer()
+            >>> # Loading from Hugging Face Hub
+            >>> parser = SpacyDependencyParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-spacy-dependency-parser")
+            >>> # Loading from a local model directory
+            >>> # parser = SpacyDependencyParser(tagger=tagger, lemmatizer=lemmatizer, model_path='path/to/spacy_model')
 
         Args:
             tagger: The POS tagger instance.
@@ -223,6 +253,11 @@ class SpacyDependencyParser(MaltParser):
     def parse(self, sentence: list[str]) -> DependencyGraph:
         """Parse a single sentence.
 
+        Examples:
+            >>> graph = parser.parse(['من', 'به', 'مدرسه', 'رفتم', '.'])
+            >>> print(graph.tree())
+            (رفتم من (به مدرسه) .)
+
         Args:
             sentence: A list of words in the sentence.
 
@@ -233,6 +268,12 @@ class SpacyDependencyParser(MaltParser):
 
     def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
         """Parse multiple sentences.
+
+        Examples:
+            >>> graphs = parser.parse_sents([['من', 'به', 'مدرسه', 'رفتم', '.']])
+            >>> graph = next(graphs)
+            >>> print(graph.tree())
+            (رفتم من (به مدرسه) .)
 
         Args:
             sentences: A list of sentences, where each sentence is a list of words.

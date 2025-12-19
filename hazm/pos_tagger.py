@@ -28,7 +28,14 @@ PUNCTUATION_LIST = [
 
 
 class POSTagger(SequenceTagger, TaggerProtocol):
-    """Class for POS tagging."""
+    """Class for POS tagging.
+
+    Examples:
+        >>> # Load from Hugging Face Hub
+        >>> tagger = POSTagger(repo_id="roshan-research/hazm-postagger", model_filename="pos_tagger.model")
+        >>> # Or load from a local model file
+        >>> # tagger = POSTagger(model="pos_tagger.model")
+    """
 
     def __init__(
         self,
@@ -39,6 +46,12 @@ class POSTagger(SequenceTagger, TaggerProtocol):
         model_filename: str | None = None,
     ) -> None:
         """Constructor.
+
+        Examples:
+            >>> # Loading from Hugging Face Hub
+            >>> tagger = POSTagger(repo_id="roshan-research/hazm-postagger", model_filename="pos_tagger.model")
+            >>> # Loading from a local model file
+            >>> # tagger = POSTagger(model="resources/pos_tagger.model")
 
         Args:
             model: Path to the local model file.
@@ -76,6 +89,12 @@ class POSTagger(SequenceTagger, TaggerProtocol):
 
     def data_maker(self, tokens: list[Sentence]) -> list[list[dict[str, Any]]]:
         """Converts tokens into features.
+
+        Examples:
+            >>> tokens = [['دلم', 'اینجا', 'مانده‌است', '.']]
+            >>> features = tagger.data_maker(tokens)
+            >>> features[0][0]['word']
+            'دلم'
 
         Args:
             tokens: A list of sentences, where each sentence is a list of tokens.
@@ -138,6 +157,10 @@ class POSTagger(SequenceTagger, TaggerProtocol):
     def tag(self, tokens: Sentence) -> TaggedSentence:
         """Tags a single sentence.
 
+        Examples:
+            >>> tagger.tag(['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
+            [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
+
         Args:
             tokens: A list of tokens representing a sentence.
 
@@ -153,6 +176,10 @@ class POSTagger(SequenceTagger, TaggerProtocol):
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
         """Tags multiple sentences.
+
+        Examples:
+            >>> tagger.tag_sents([['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.']])
+            [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
 
         Args:
             sentences: A list of sentences to tag.

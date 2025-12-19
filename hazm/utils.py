@@ -28,6 +28,11 @@ NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 def maketrans(a: str, b: str) -> dict[int, Any]:
     """Maps each character in string `a` to the corresponding character in string `b`.
 
+    Examples:
+        >>> table = maketrans('012', '۰۱۲')
+        >>> '012'.translate(table)
+        '۰۱۲'
+
     Args:
         a: A string of characters to be replaced.
         b: A string of characters to replace with.
@@ -39,6 +44,11 @@ def maketrans(a: str, b: str) -> dict[int, Any]:
 
 def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, tuple[str, ...]]]:
     """Returns a list of words from the specified file.
+
+    Examples:
+        >>> from hazm.utils import words_list
+        >>> words_list()[1]
+        ('آب', 549005877, ('N', 'AJ'))
 
     Args:
         words_file: Path to the words file. Defaults to `default_words`.
@@ -59,6 +69,11 @@ def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, t
 def stopwords_list(stopwords_file: str | Path = default_stopwords) -> list[str]:
     """Returns a sorted list of stopwords.
 
+    Examples:
+        >>> from hazm.utils import stopwords_list
+        >>> stopwords_list()[:4]
+        ['آخرین', 'آقای', 'آمد', 'آمده']
+
     Args:
         stopwords_file: Path to the stopwords file. Defaults to `default_stopwords`.
 
@@ -73,6 +88,11 @@ def stopwords_list(stopwords_file: str | Path = default_stopwords) -> list[str]:
 def verbs_list() -> list[str]:
     """Returns a list of verbs from the default verbs file.
 
+    Examples:
+        >>> from hazm.utils import verbs_list
+        >>> verbs_list()[:2]
+        ['آباد#آباد', 'آزمای#آزمود']
+
     Returns:
         A list of verbs.
     """
@@ -81,6 +101,11 @@ def verbs_list() -> list[str]:
 
 def past_roots() -> str:
     """Returns a string of past roots joined by a pipe character.
+
+    Examples:
+        >>> from hazm.utils import past_roots
+        >>> past_roots()[:20]
+        'آباد|آزمود|آسود|آشفت'
 
     Returns:
         A string containing all past roots, suitable for use in regex.
@@ -94,6 +119,11 @@ def past_roots() -> str:
 def present_roots() -> str:
     """Returns a string of present roots joined by a pipe character.
 
+    Examples:
+        >>> from hazm.utils import present_roots
+        >>> present_roots()[:20]
+        'آباد|آزمای|آسای|آشوب'
+
     Returns:
         A string containing all present roots, suitable for use in regex.
     """
@@ -105,6 +135,12 @@ def present_roots() -> str:
 
 def regex_replace(patterns: list[tuple[str, str]], text: str) -> str:
     """Finds regex patterns and replaces them with the given text.
+
+    Examples:
+        >>> from hazm.utils import regex_replace
+        >>> patterns = [(r'apples', 'oranges'), (r'red', 'blue')]
+        >>> regex_replace(patterns, 'red apples')
+        'blue oranges'
 
     Args:
         patterns: A list of tuples, each containing (pattern, replacement).

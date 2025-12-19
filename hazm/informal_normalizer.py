@@ -16,7 +16,13 @@ from hazm.word_tokenizer import WordTokenizer
 
 
 class InformalNormalizer(Normalizer):
-    """This class contains functions for normalizing informal text."""
+    """This class contains functions for normalizing informal text.
+
+    Examples:
+        >>> normalizer = InformalNormalizer()
+        >>> normalizer.normalize('بابا یه شغل مناسب واسه بچه هام پیدا کردن')
+        [[['بابا'], ['یک'], ['شغل'], ['مناسب'], ['برای'], ['بچه'], ['هایم'], ['پیدا'], ['کردن', 'کردند']]]
+    """
 
     def __init__(
         self: "InformalNormalizer",
@@ -98,6 +104,11 @@ class InformalNormalizer(Normalizer):
     def split_token_words(self: "InformalNormalizer", token: str) -> str:
         """Inserts spaces where necessary in the token.
 
+        Examples:
+            >>> normalizer = InformalNormalizer(seperation_flag=True)
+            >>> normalizer.split_token_words('تورادوست‌دارم')
+            'تو را دوست دارم'
+
         Args:
             token: The token to be processed.
 
@@ -136,6 +147,11 @@ class InformalNormalizer(Normalizer):
 
     def normalized_word(self: "InformalNormalizer", word: str) -> list[str]:
         """Returns the normalized forms of the word.
+
+        Examples:
+            >>> normalizer = InformalNormalizer()
+            >>> normalizer.normalized_word('می‌رم')
+            ['می‌روم', 'می‌رم']
 
         Args:
             word: The word to be normalized.
@@ -733,6 +749,11 @@ class InformalNormalizer(Normalizer):
     def normalize(self: "InformalNormalizer", text: str) -> list[list[list[str]]]:
         """Converts informal text to standard Persian text.
 
+        Examples:
+            >>> normalizer = InformalNormalizer()
+            >>> normalizer.normalize('بچه هام پیدا کردن که به جایی برنمیخوره !')
+            [[['بچه'], ['هایم'], ['پیدا'], ['کردن', 'کردند'], ['که'], ['به'], ['جایی'], ['برنمی‌خورد', 'برنمی‌خوره'], ['!']]]
+
         Args:
             text: The informal text to be normalized.
 
@@ -749,6 +770,11 @@ class InformalNormalizer(Normalizer):
 
     def informal_conjugations(self: "InformalNormalizer", verb: str) -> list[str]:
         """Generates informal conjugations of a verb.
+
+        Examples:
+            >>> normalizer = InformalNormalizer()
+            >>> normalizer.informal_conjugations('رفت')
+            ['رفتم', 'رفتی', 'رفته', 'رفتیم', 'رفتین', 'رفتن', ...]
 
         Args:
             verb: The verb to be conjugated.

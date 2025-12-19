@@ -94,7 +94,13 @@ def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
 
 
 class SequenceTagger:
-    """Base class for sequence tagging using CRFSuite."""
+    """Base class for sequence tagging using CRFSuite.
+
+    Examples:
+        >>> tagger = SequenceTagger(model='tagger.model')
+        >>> tagger.tag(['من', 'به', 'مدرسه', 'رفتم', '.'])
+        [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('رفتم', 'VERB'), ('.', 'PUNCT')]
+    """
 
     def __init__(
         self,
@@ -115,6 +121,10 @@ class SequenceTagger:
     def load_model(self, model_path: str | Path) -> None:
         """Loads the tagger model.
 
+        Examples:
+            >>> tagger = SequenceTagger()
+            >>> tagger.load_model('tagger.model')
+
         Args:
             model_path: Path to the model file.
         """
@@ -124,6 +134,11 @@ class SequenceTagger:
 
     def tag(self, tokens: Sentence) -> TaggedSentence:
         """Tags a single sentence.
+
+        Examples:
+            >>> tagger = SequenceTagger(model='tagger.model')
+            >>> tagger.tag(['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.'])
+            [('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]
 
         Args:
             tokens: A list of tokens representing a sentence.
@@ -142,6 +157,11 @@ class SequenceTagger:
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
         """Tags multiple sentences.
+
+        Examples:
+            >>> tagger = SequenceTagger(model='tagger.model')
+            >>> tagger.tag_sents([['من', 'به', 'مدرسه', 'ایران', 'رفته_بودم', '.']])
+            [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
 
         Args:
             sentences: A list of sentences to tag.
@@ -171,6 +191,11 @@ class SequenceTagger:
         report_duration: bool = True,
     ) -> None:
         """Trains the model.
+
+        Examples:
+            >>> tagger = SequenceTagger()
+            >>> tagged_list = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('رفتم', 'VERB'), ('.', 'PUNCT')]]
+            >>> tagger.train(tagged_list, c1=0.5, c2=0.5, max_iteration=100, file_name='tagger.model')
 
         Args:
             tagged_list: A list of tagged sentences for training.
@@ -208,6 +233,9 @@ class SequenceTagger:
     def save_model(self, filename: str) -> None:
         """Saves the model to a file.
 
+        Examples:
+            >>> tagger.save_model('new_tagger.model')
+
         Args:
             filename: The name of the file to save the model.
         """
@@ -218,6 +246,11 @@ class SequenceTagger:
 
     def evaluate(self, tagged_sent: list[TaggedSentence]) -> float:
         """Evaluates the model.
+
+        Examples:
+            >>> tagger = SequenceTagger(model='tagger.model')
+            >>> tagger.evaluate([[('من', 'PRON'), ('رفتم', 'VERB')]])
+            1.0
 
         Args:
             tagged_sent: A list of tagged sentences for evaluation.
@@ -239,7 +272,13 @@ class SequenceTagger:
 
 
 class IOBTagger(SequenceTagger):
-    """IOB Tagger class for text chunking."""
+    """IOB Tagger class for text chunking.
+
+    Examples:
+        >>> iob_tagger = IOBTagger(model='chunker.model')
+        >>> iob_tagger.tag([('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('رفتم', 'VERB'), ('.', 'PUNCT')])
+        [('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN', 'B-NP'), ('رفتم', 'VERB', 'B-VP'), ('.', 'PUNCT', 'O')]
+    """
 
     def __init__(
         self,
@@ -276,6 +315,10 @@ class IOBTagger(SequenceTagger):
     def tag(self, tagged_data: TaggedSentence) -> ChunkedSentence:
         """Tags a single sentence with IOB tags.
 
+        Examples:
+            >>> iob_tagger.tag([('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN')])
+            [('من', 'PRON', 'B-NP'), ('به', 'ADP', 'B-PP'), ('مدرسه', 'NOUN', 'B-NP')]
+
         Args:
             tagged_data: A tagged sentence.
 
@@ -287,6 +330,10 @@ class IOBTagger(SequenceTagger):
 
     def tag_sents(self, sentences: list[TaggedSentence]) -> list[ChunkedSentence]:
         """Tags multiple sentences.
+
+        Examples:
+            >>> iob_tagger.tag_sents([[('من', 'PRON'), ('رفتم', 'VERB')]])
+            [[('من', 'PRON', 'B-NP'), ('رفتم', 'VERB', 'B-VP')]]
 
         Args:
             sentences: A list of tagged sentences.
@@ -311,6 +358,9 @@ class IOBTagger(SequenceTagger):
         report_duration: bool = True,
     ) -> None:
         """Trains the model.
+
+        Examples:
+            >>> iob_tagger.train(tagged_list=[[('من', 'PRON', 'B-NP'), ('رفتم', 'VERB', 'B-VP')]], file_name='chunker.model')
 
         Args:
             tagged_list: A list of chunked sentences for training.
@@ -338,6 +388,10 @@ class IOBTagger(SequenceTagger):
 
     def evaluate(self, tagged_sent: list[ChunkedSentence]) -> float:
         """Evaluates the model.
+
+        Examples:
+            >>> iob_tagger.evaluate([[('من', 'PRON', 'B-NP'), ('رفتم', 'VERB', 'B-VP')]])
+            1.0
 
         Args:
             tagged_sent: A list of chunked sentences for evaluation.

@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 def tree2brackets(tree: Tree) -> str:
     """Converts a tree object to a bracketed string representation.
 
+    Examples:
+        >>> chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
+        >>> tree = chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
+        >>> tree2brackets(tree)
+        '[نامه ایشان NP] [را POSTP] [دریافت داشتم VP] .'
+
     Args:
         tree: The parse tree to be converted.
 
@@ -67,6 +73,12 @@ class Chunker(IOBTagger):
     ) -> None:
         """Constructor.
 
+        Examples:
+            >>> # Loading from Hugging Face Hub
+            >>> chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
+            >>> # Loading from a local model file
+            >>> # chunker = Chunker(model='resources/chunker.model')
+
         Args:
             model: Path to the local model file.
             data_maker: Custom data maker function.
@@ -94,6 +106,12 @@ class Chunker(IOBTagger):
 
     def data_maker(self, tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
         """Converts tokens into features.
+
+        Examples:
+            >>> tokens = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
+            >>> features = chunker.data_maker(tokens)
+            >>> features[0][0]['pos']
+            'PRON'
 
         Args:
             tokens: A list of tagged sentences.
@@ -172,6 +190,15 @@ class Chunker(IOBTagger):
     def parse(self, sentence: TaggedSentence) -> Tree:
         """Parses a tagged sentence into a chunk tree.
 
+        Examples:
+            >>> tree = chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
+            >>> print(tree)
+            (S
+              (NP نامه/NOUN,EZ ایشان/PRON)
+              (POSTP را/ADP)
+              (VP دریافت/NOUN داشتم/VERB)
+              ./PUNCT)
+
         Args:
             sentence: A tagged sentence.
 
@@ -184,6 +211,10 @@ class Chunker(IOBTagger):
     def parse_sents(self, sentences: list[TaggedSentence]) -> Iterator[Tree]:
         """Parses a list of tagged sentences into chunk trees.
 
+        Examples:
+            >>> sentences = [[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON')], [('من', 'PRON'), ('رفتم', 'VERB')]]
+            >>> trees = list(chunker.parse_sents(sentences))
+
         Args:
             sentences: A list of tagged sentences.
 
@@ -195,6 +226,11 @@ class Chunker(IOBTagger):
 
     def evaluate(self, trees: list[Tree]) -> float:
         """Evaluates the accuracy of the chunker.
+
+        Examples:
+            >>> trees = [chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])]
+            >>> chunker.evaluate(trees)
+            1.0
 
         Args:
             trees: A list of gold standard parse trees.
