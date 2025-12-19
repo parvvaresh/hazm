@@ -41,26 +41,29 @@ class WordEmbedding:
         model_filename: str | None = None,
     ) -> "WordEmbedding":
         """Factory method to load the model."""
-        
         final_model_path = model_path
 
         if repo_id and model_filename:
             try:
-                from huggingface_hub import hf_hub_download, snapshot_download
-                
+                from huggingface_hub import hf_hub_download
+                from huggingface_hub import snapshot_download
+
                 if model_type == "fasttext":
                      final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
                 else:
                      cache_dir = snapshot_download(repo_id=repo_id)
                      final_model_path = Path(cache_dir) / model_filename
 
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub`.")
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download from {repo_id}: {e}")
+                msg = f"Failed to download from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         if not final_model_path:
-             raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
+                msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+                raise ValueError(msg)
 
         if model_type not in SUPPORTED_EMBEDDINGS:
             msg = f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}'
@@ -217,24 +220,28 @@ class SentEmbedding:
         repo_id: str | None = None,
         model_filename: str | None = None,
     ) -> "SentEmbedding":
-        
+
         final_model_path = model_path
 
         if repo_id and model_filename:
             try:
-                from huggingface_hub import snapshot_download
                 from pathlib import Path
-                
+
+                from huggingface_hub import snapshot_download
+
                 cache_dir = snapshot_download(repo_id=repo_id)
                 final_model_path = Path(cache_dir) / model_filename
-                
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub`.")
+
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download from {repo_id}: {e}")
+                msg = f"Failed to download from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         if not final_model_path:
-             raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
+             msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+             raise ValueError(msg)
 
         model = Doc2Vec.load(str(final_model_path))
         return cls(model)

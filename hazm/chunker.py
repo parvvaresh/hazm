@@ -76,10 +76,12 @@ class Chunker(IOBTagger):
             try:
                 from huggingface_hub import hf_hub_download
                 final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         super().__init__(final_model_path, final_data_maker)
 
@@ -193,7 +195,6 @@ class SpacyChunker(Chunker):
         using_gpu: bool = False,
         gpu_id: int = 0,
         repo_id: str | None = None,
-        model_filename: str | None = None,
     ) -> None:
         """Initialize."""
         super().__init__()
@@ -202,15 +203,17 @@ class SpacyChunker(Chunker):
         self.gpu_id = gpu_id
         self.model = None
         self.gpu_availability = False
-        
+
         if repo_id:
             try:
                 from huggingface_hub import snapshot_download
                 self.model_path = snapshot_download(repo_id=repo_id)
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         self.peykare_dict: dict[str, list[str]] = {}
 

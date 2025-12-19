@@ -6,11 +6,11 @@ import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-import spacy
-from spacy.tokens import Doc
 
+import spacy
 from nltk.parse import DependencyGraph
 from nltk.parse.malt import MaltParser as NLTKMaltParser
+from spacy.tokens import Doc
 
 from hazm.types import Sentence
 from hazm.types import TaggedSentence
@@ -42,27 +42,29 @@ class MaltParser(NLTKMaltParser):
         """
         self.tagger = tagger
         self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_"
+            lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
-        
+
         final_working_dir = working_dir
         final_model_file = model_file
-        final_malt_bin = os.path.join(working_dir, "malt.jar")
+        final_malt_bin = Path(working_dir) / "malt.jar"
 
         if repo_id and model_filename:
             try:
                 from huggingface_hub import snapshot_download
-                
+
                 cache_dir = snapshot_download(repo_id=repo_id)
-                
+
                 final_working_dir = cache_dir
                 final_model_file = model_filename
-                final_malt_bin = os.path.join(cache_dir, "malt.jar")
-                
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+                final_malt_bin = Path(cache_dir) / "malt.jar"
+
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         self.working_dir = final_working_dir
         self.mco = final_model_file
@@ -128,33 +130,32 @@ class SpacyDependencyParser(MaltParser):
         tagger: Any,
         lemmatizer: Any,
         model_path: str | Path | None = None,
-        working_dir: str = ".",
-        model_file: str = "",
         using_gpu: bool = False,
         gpu_id: int = 0,
         repo_id: str | None = None,
-        model_filename: str | None = None,
     ) -> None:
         """Initialize."""
         self.tagger = tagger
         self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_"
+            lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
-        
+
         self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu
         self.gpu_id = gpu_id
         self.model = None
         self.gpu_availability = False
-        
+
         if repo_id:
             try:
                 from huggingface_hub import snapshot_download
                 self.model_path = snapshot_download(repo_id=repo_id)
-            except ImportError:
-                raise ImportError("Please install `huggingface-hub` to use pretrained models from Hub.")
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
             except Exception as e:
-                raise ValueError(f"Failed to download model from {repo_id}: {e}")
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
         self.peykare_dict: dict[str, list[str]] = {}
 
@@ -184,7 +185,8 @@ class SpacyDependencyParser(MaltParser):
     def _custom_tokenizer(self, text: str) -> Doc:
         if self.model and text in self.peykare_dict:
             return Doc(self.model.vocab, self.peykare_dict[text])
-        raise ValueError("No tokenization available for input.")
+        msg = "No tokenization available for input."
+        raise ValueError(msg)
 
     def _update_dictionary(self, sents: list[list[str]]) -> None:
         """Add sentences to dictionary."""
@@ -200,7 +202,8 @@ class SpacyDependencyParser(MaltParser):
     def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
         """Parse multiple sentences."""
         if self.model is None:
-             raise ValueError("Model not loaded.")
+             msg = "Model not loaded."
+             raise ValueError(msg)
 
         cleaned_sentences = []
         for sent in sentences:
@@ -212,7 +215,7 @@ class SpacyDependencyParser(MaltParser):
         docs = []
         for tokens in cleaned_sentences:
             doc = Doc(self.model.vocab, words=tokens)
-            for name, proc in self.model.pipeline:
+            for _name, proc in self.model.pipeline:
                 doc = proc(doc)
             docs.append(doc)
 
@@ -222,15 +225,15 @@ class SpacyDependencyParser(MaltParser):
                 head_index = token.head.i + 1
                 if token.i == token.head.i:
                     head_index = 0
-                
+
                 lemma = token.lemma_ if token.lemma_ else "_"
                 pos = token.pos_ if token.pos_ else "_"
                 tag = token.tag_ if token.tag_ else "_"
                 dep = token.dep_ if token.dep_ else "_"
-                
+
                 line = f"{token.i + 1}\t{token.text}\t{lemma}\t{pos}\t{tag}\t_\t{head_index}\t{dep}\t_\t_"
                 conll_lines.append(line)
-            
+
             conll_str = "\n".join(conll_lines)
             yield DependencyGraph(conll_str, top_relation_label="root")
 
