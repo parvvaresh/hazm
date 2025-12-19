@@ -30,9 +30,9 @@ class WordEmbedding:
 
     Examples:
         >>> # Load from Hugging Face Hub
-        >>> wordEmbedding = WordEmbedding.load(repo_id='roshan-research/hazm-fasttext', model_filename='fasttext.bin', model_type='fasttext')
+        >>> wordEmbedding = WordEmbedding.load(repo_id='roshan-research/hazm-word-embedding', model_filename='fasttext_skipgram_300.bin', model_type='fasttext')
         >>> # Or load from a local model file
-        >>> # wordEmbedding = WordEmbedding.load(model_path='word2vec.bin', model_type='fasttext')
+        >>> # wordEmbedding = WordEmbedding.load(model_path='fasttext_skipgram_300.bin', model_type='fasttext')
     """
 
     def __init__(self, model: Any, model_type: str) -> None:
@@ -152,7 +152,8 @@ class WordEmbedding:
             'پنجره'
         """
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.doesnt_match(words)
 
     def similarity(self, word1: str, word2: str) -> float:
@@ -163,7 +164,8 @@ class WordEmbedding:
             0.72231203
         """
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return float(self.model.similarity(word1, word2))
 
     def nearest_words(self, word: str, topn: int = 5) -> list[tuple[str, float]]:
@@ -174,43 +176,50 @@ class WordEmbedding:
             [('کشور', 0.8735059499740601), ...]
         """
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.most_similar(word, topn=topn)
 
     def get_normal_vector(self, word: str) -> ndarray:
         """Returns the normalized vector for the given word."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.get_vector(word=word, norm=True)
 
     def get_vocabs(self) -> list[str]:
         """Returns the list of vocabulary words."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.index_to_key
 
     def get_vocab_to_index(self) -> dict[str, int]:
         """Returns a dictionary mapping words to their indices."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.key_to_index
 
     def get_vectors(self) -> ndarray:
         """Returns the matrix of word vectors."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vectors
 
     def get_vector_size(self) -> int:
         """Returns the size of the word vectors."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size
 
     def __getitem__(self, word: str) -> ndarray:
         """Returns the vector for the given word."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model[word]
 
 
@@ -244,9 +253,9 @@ class SentEmbedding:
 
     Examples:
         >>> # Load from Hugging Face Hub
-        >>> sentEmbedding = SentEmbedding.load(repo_id='roshan-research/hazm-sent2vec', model_filename='sent2vec.model')
+        >>> sentEmbedding = SentEmbedding.load(repo_id='roshan-research/hazm-sent-embedding', model_filename='sent2vec-naab.model')
         >>> # Or load from a local model file
-        >>> # sentEmbedding = SentEmbedding.load(model_path='sent2vec.model')
+        >>> # sentEmbedding = SentEmbedding.load(model_path='sent2vec-naab.model')
     """
 
     def __init__(self, model: Doc2Vec | None = None) -> None:
@@ -284,10 +293,12 @@ class SentEmbedding:
                 cache_dir = snapshot_download(repo_id=repo_id)
                 final_model_path = Path(cache_dir) / model_filename
             except Exception as e:
-                raise ValueError(f"Failed to download from {repo_id}: {e}")
+                msg = f"Failed to import huggingface-hub: {e}"
+                raise ValueError(msg) from e
 
         if not final_model_path:
-             raise ValueError("Either 'model_path' or 'repo_id' + 'model_filename' must be provided.")
+            msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+            raise ValueError(msg)
 
         model = Doc2Vec.load(str(final_model_path))
         return cls(model)
@@ -320,7 +331,8 @@ class SentEmbedding:
             >>> result = sentEmbedding.get_sentence_vector('این متن به برداری تبدیل خواهد شد')
         """
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         tokenized_sent = word_tokenize(sent)
         return self.model.infer_vector(tokenized_sent)
 
@@ -331,13 +343,15 @@ class SentEmbedding:
             >>> result = sentEmbedding.similarity('شیر حیوانی وحشی است', 'پلنگ از دیگر جانوران درنده است')
         """
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return float(self.model.similarity_unseen_docs(word_tokenize(sent1), word_tokenize(sent2)))
 
     def get_vector_size(self) -> int:
         """Returns the size of the sentence vectors."""
         if not self.model:
-            raise AttributeError("Model must be loaded first.")
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size
 
     def __getitem__(self, sent: str) -> ndarray:
