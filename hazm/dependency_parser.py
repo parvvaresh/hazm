@@ -209,25 +209,28 @@ class SpacyDependencyParser(MaltParser):
             else:
                 cleaned_sentences.append(sent)
 
-        self._update_dictionary(cleaned_sentences)
-
-        docs = list(
-            self.model.pipe(
-                (" ".join(sent) for sent in cleaned_sentences),
-                batch_size=128,
-            ),
-        )
+        docs = []
+        for tokens in cleaned_sentences:
+            doc = Doc(self.model.vocab, words=tokens)
+            for name, proc in self.model.pipeline:
+                doc = proc(doc)
+            docs.append(doc)
 
         for doc in docs:
             conll_lines = []
             for token in doc:
                 head_index = token.head.i + 1
-                if token.i == token.head.i: # ریشه
+                if token.i == token.head.i:
                     head_index = 0
                 
-                line = f"{token.i + 1}\t{token.text}\t{token.lemma_}\t{token.pos_}\t{token.tag_}\t_\t{head_index}\t{token.dep_}\t_\t_"
+                lemma = token.lemma_ if token.lemma_ else "_"
+                pos = token.pos_ if token.pos_ else "_"
+                tag = token.tag_ if token.tag_ else "_"
+                dep = token.dep_ if token.dep_ else "_"
+                
+                line = f"{token.i + 1}\t{token.text}\t{lemma}\t{pos}\t{tag}\t_\t{head_index}\t{dep}\t_\t_"
                 conll_lines.append(line)
             
             conll_str = "\n".join(conll_lines)
-            yield DependencyGraph(conll_str)
+            yield DependencyGraph(conll_str, top_relation_label="root")
 
