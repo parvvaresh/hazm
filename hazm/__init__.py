@@ -12,6 +12,7 @@ from .chunker import SpacyChunker
 from .chunker import tree2brackets
 from .constants import *
 from .dependency_parser import MaltParser
+from .dependency_parser import SpacyDependencyParser
 from .embedding import SentEmbedding
 
 # Embeddings
