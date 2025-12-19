@@ -1,8 +1,6 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای استخراج کلماتِ متن است.
+"""This module includes classes and functions for extracting words from text.
 
-برای استخراج جملات، از تابع [SentenceTokenizer()][hazm.SentenceTokenizer]
-استفاده کنید.
-
+To extract sentences, use the [SentenceTokenizer()][hazm.SentenceTokenizer] function.
 """
 
 import re
@@ -19,26 +17,27 @@ from hazm.utils import words_list
 
 
 class WordTokenizer(TokenizerI, TokenizerProtocol):
-    """این کلاس شامل توابعی برای استخراج کلماتِ متن است.
+    """This class includes methods for extracting words from text.
 
     Args:
-        words_file: مسیر فایل حاوی لیست کلمات.
-            هضم به صورت پیش‌فرض فایلی برای این منظور در نظر گرفته است؛ با
-            این حال شما می‌توانید فایل موردنظر خود را معرفی کنید. برای آگاهی از
-            ساختار این فایل به فایل پیش‌فرض مراجعه کنید.
-        verbs_file: مسیر فایل حاوی افعال.
-            هضم به صورت پیش‌فرض فایلی برای این منظور در نظر گرفته است؛ با
-            این حال شما می‌توانید فایل موردنظر خود را معرفی کنید. برای آگاهی از
-            ساختار این فایل به فایل پیش‌فرض مراجعه کنید.
-        join_verb_parts: اگر `True` باشد افعال چندبخشی را با خط زیر به هم می‌چسباند؛ مثلاً «گفته شده است» را به صورت «گفته_شده_است» برمی‌گرداند.
-        join_abbreviations: اگر `True` باشد مخفف‌ها را نمی‌شکند و به شکل یک توکن برمی‌گرداند.
-        separate_emoji: اگر `True` باشد اموجی‌ها را با یک فاصله از هم جدا می‌کند.
-        replace_links: اگر `True` باشد لینک‌ها را با کلمهٔ `LINK` جایگزین می‌کند.
-        replace_ids: اگر `True` باشد شناسه‌ها را با کلمهٔ `ID` جایگزین می‌کند.
-        replace_emails: اگر `True` باشد آدرس‌های ایمیل را با کلمهٔ `EMAIL‍` جایگزین می‌کند.
-        replace_numbers: اگر `True` باشد اعداد اعشاری را با`NUMF` و اعداد صحیح را با` NUM` جایگزین می‌کند. در اعداد غیراعشاری، تعداد ارقام نیز جلوی `NUM` می‌آید.
-        replace_hashtags: اگر `True` باشد علامت `#` را با `TAG` جایگزین می‌کند.
-
+        words_file: Path to the file containing the list of words.
+            Hazm provides a default file; however, you can introduce your own
+            file. Refer to the default file to understand its structure.
+        verbs_file: Path to the file containing verbs.
+            Hazm provides a default file; however, you can introduce your own
+            file. Refer to the default file to understand its structure.
+        join_verb_parts: If `True`, joins multi-part verbs with an underscore;
+            for example, 'گفته شده است' becomes 'گفته_شده_است'.
+        join_abbreviations: If `True`, prevents abbreviations from being split
+            and returns them as a single token.
+        separate_emoji: If `True`, separates emojis with a space.
+        replace_links: If `True`, replaces links with the word `LINK`.
+        replace_ids: If `True`, replaces IDs with the word `ID`.
+        replace_emails: If `True`, replaces email addresses with the word `EMAIL`.
+        replace_numbers: If `True`, replaces decimal numbers with `NUMF` and
+            integers with `NUM`. For non-decimal numbers, the number of digits
+            is appended to `NUM`.
+        replace_hashtags: If `True`, replaces the `#` symbol with `TAG`.
     """
 
     def __init__(
@@ -54,6 +53,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         replace_numbers: bool = False,
         replace_hashtags: bool = False,
     ) -> None:
+        """Initializes the WordTokenizer with the specified configurations."""
         self._join_verb_parts = join_verb_parts
         self._join_abbreviation = join_abbreviations
         self.separate_emoji = separate_emoji
@@ -103,6 +103,11 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
                 self.abbreviations = [line.strip() for line in f]
 
     def _init_verb_parts(self, verbs_file: str | Path):
+        """Initializes the internal sets used for joining verb parts.
+
+        Args:
+            verbs_file: Path to the verbs file.
+        """
         self.after_verbs = {
             "ام", "ای", "است", "ایم", "اید", "اند", "بودم", "بودی", "بود", "بودیم", "بودید", "بودند",
             "باشم", "باشی", "باشد", "باشیم", "باشید", "باشند", "شده_ام", "شده_ای", "شده_است",
@@ -135,7 +140,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
             )
 
     def tokenize(self, text: str) -> list[str]:
-        """توکن‌های متن را استخراج می‌کند.
+        """Extracts tokens from the given text.
 
         Examples:
             >>> tokenizer = WordTokenizer()
@@ -154,15 +159,14 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
             >>> print(' '.join(tokenizer.tokenize('دیگه میخوام ترک تحصیل کنم 😂😂😂')))
             دیگه میخوام ترک تحصیل کنم 😂 😂 😂
             >>> tokenizer = WordTokenizer(join_abbreviations=True)
-            >>> print(' '.join(tokenizer.tokenize('امام علی (ع) فرمود: برترین زهد، پنهان داشتن زهد است')))
+            >>> tokenizer.tokenize('امام علی (ع) فرمود: برترین زهد، پنهان داشتن زهد است')
             ['امام', 'علی', '(ع)', 'فرمود', ':', 'برترین', 'زهد', '،', 'پنهان', 'داشتن', 'زهد', 'است']
 
         Args:
-            text: متنی که باید توکن‌های آن استخراج شود.
+            text: The text from which tokens should be extracted.
 
         Returns:
-            لیست توکن‌های استخراج‌شده.
-
+            A list of extracted tokens.
         """
         keyword_processor = None
 
@@ -215,7 +219,7 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         return tokens
 
     def join_verb_parts(self, tokens: list[str]) -> list[str]:
-        """افعال چندبخشی را به هم می‌چسباند.
+        """Joins multi-part verbs with an underscore.
 
         Examples:
             >>> tokenizer = WordTokenizer()
@@ -231,11 +235,10 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
             ['خسته_شدید']
 
         Args:
-            tokens: لیست کلمات یک فعل چندبخشی.
+            tokens: A list of word components of a multi-part verb.
 
         Returns:
-            لیست از افعال چندبخشی که در صورت لزوم بخش‌های آن با کاراکتر خط زیر به هم چسبانده_شده_است.
-
+            A list where parts of multi-part verbs are joined by underscores if necessary.
         """
         if len(tokens) <= 1:
             return tokens
@@ -253,5 +256,12 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
 
 
 def word_tokenize(text: str) -> list[str]:
-    """توکنایزر برای استخراج کلمات از متن."""
+    """A helper function to tokenize text into words.
+
+    Args:
+        text: The input text.
+
+    Returns:
+        A list of tokens.
+    """
     return WordTokenizer().tokenize(text)

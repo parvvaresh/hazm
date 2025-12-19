@@ -1,7 +1,6 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ سِنتی‌پِرِس است.
+"""This module includes classes and functions for reading the SentiPers corpus.
 
-سِنتی‌پرس شامل مجموعه‌ای از متون فارسی با برچسب‌های معنایی است.
-
+SentiPers contains a collection of Persian texts with semantic labels.
 """
 
 
@@ -15,39 +14,48 @@ from xml.dom import minidom
 
 
 class SentiPersReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ سِنتی‌پِرِس است.
+    """This class includes functions for reading the SentiPers corpus.
 
     Args:
-        root: مسیر فولدر حاوی فایل‌های پیکره
-
+        root: Path to the folder containing the corpus files.
     """
 
     def __init__(self: "SentiPersReader", root: str) -> None:
+        """Initializes the SentiPers reader.
+
+        Args:
+            root: Path to the folder containing the corpus files.
+        """
         self._root = root
 
     def docs(self: "SentiPersReader") -> Iterator[dict[str, Any]]:
-        """متن‌های فارسی را در قالب یک برمی‌گرداند.
+        """Yields documents from the SentiPers corpus.
 
-        هر متن شامل این فیلدهاست:
+        Each document is returned as a dictionary containing these fields:
+        - Title
+        - Type
+        - comments: A list of comment dictionaries.
 
-        - عنوان (Title)
-        - نوع (Type)
-        - نظرات (comments)
-
-        فیلد `comments `خودش شامل این فیلدهاست:
-
-        - شناسه (id)
-        - نوع (type)
-        - نویسنده (author)
-        - ارزش (value)
-        - جملات (sentences)
+        Each dictionary in the `comments` list includes:
+        - id
+        - type
+        - author
+        - value
+        - sentences: A list of sentence dictionaries (text, id, value).
 
         Yields:
-            متن بعدی.
-
+            The next document in the corpus.
         """
 
-        def element_sentences(element: str) -> Iterator[dict]:
+        def element_sentences(element: Any) -> Iterator[dict[str, Any]]:
+            """Extracts sentences from an XML element.
+
+            Args:
+                element: The XML element to extract sentences from.
+
+            Yields:
+                A dictionary for each sentence containing 'text', 'id', and 'value'.
+            """
             for sentence in element.getElementsByTagName("Sentence"):
                 yield {
                     "text": sentence.childNodes[0].data,
@@ -110,8 +118,8 @@ class SentiPersReader:
                 except Exception as e:
                     print("error in reading", filename, e, file=sys.stderr)
 
-    def comments(self: "SentiPersReader") -> Iterator[str]:
-        """نظرات مربوط به متن را برمی‌گرداند.
+    def comments(self: "SentiPersReader") -> Iterator[list[list[str]]]:
+        """Yields comments belonging to each document.
 
         Examples:
             >>> sentipers = SentiPersReader(root='sentipers')
@@ -119,8 +127,7 @@ class SentiPersReader:
             'بيشتر مناسب است براي کساني که به دنبال تنوع هستند و در همه چيز نو گرايي دارند .'
 
         Yields:
-            نظر بعدی.
-
+            A list of comments for the next document, where each comment is a list of its sentences.
         """
         for doc in self.docs():
             yield [

@@ -1,6 +1,8 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ موجودیت‌های نامدار است.
+"""This module includes classes and functions for reading the Named Entity Recognition (NER) corpus.
 
-[پیکرهٔ موجودیت‌های نامدار](https://github.com/Text-Mining/Persian-NER/) حاوی ۲۵ میلیون توکنِ برچسب‌خورده از ویکی‌پدیای فارسی در قالب حدود یک میلیون جمله است.
+The [Named Entity Recognition corpus](https://github.com/Text-Mining/Persian-NER/)
+contains 25 million tagged tokens from Persian Wikipedia in the form of about
+one million sentences.
 """
 
 from collections.abc import Iterator
@@ -8,18 +10,23 @@ from pathlib import Path
 
 
 class NerReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ موجودیت‌های نامدار است.
+    """This class includes functions for reading the Named Entity Recognition (NER) corpus.
 
     Args:
-        corpus_folder: مسیر فولدرِ حاوی فایل‌های پیکره.
+        corpus_folder: Path to the folder containing the corpus files.
     """
     def __init__(self: "NerReader", corpus_folder: str) -> None:
+        """Initializes the NER reader.
+
+        Args:
+            corpus_folder: Path to the folder containing the corpus files.
+        """
         self._corpus_folder = corpus_folder
         self._file_paths = Path(corpus_folder).glob("*.txt")
 
 
     def sents(self: "NerReader") -> Iterator[list[tuple[str,str]]]:
-        """جملات را یک‌به‌یک در قالب لیستی از `(توکن، برچسب)`ها برمی‌گرداند.
+        """Yields sentences one by one as a list of `(token, tag)` tuples.
 
         Examples:
             >>> ner = NerReader("ner")
@@ -27,8 +34,7 @@ class NerReader:
             [('ویکی‌پدیای', 'O'), ('انگلیسی', 'O'), ('در', 'B-DAT'), ('تاریخ', 'I-DAT'), ('۱۵', 'I-DAT'), ('ژانویه', 'I-DAT'), ('۲۰۰۱', 'I-DAT'), ('(', 'O'), ('میلادی', 'B-DAT'), (')', 'O'), ('۲۶', 'B-DAT'), ('دی', 'I-DAT'), ('۱۳۷۹', 'I-DAT'), (')', 'O'), ('به', 'O'), ('صورت', 'O'), ('مکملی', 'O'), ('برای', 'O'), ('دانشنامه', 'O'), ('تخصصی', 'O'), ('نوپدیا', 'O'), ('نوشته', 'O'), ('شد', 'O'), ('.', 'O')]
 
         Yields:
-            جملهٔ بعدی در قالب لیستی از `(توکن، برچسب)`ها
-
+            The next sentence in the form of a list of `(token, tag)` tuples.
         """
         for file_path in self._file_paths:
             with Path(file_path).open("r", encoding="utf-8") as file:

@@ -1,5 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ تی‌نیوز است."""
-
+"""This module includes classes and functions for reading the TNews corpus."""
 
 import os
 import re
@@ -11,31 +10,34 @@ from xml.dom import minidom
 
 
 class TNewsReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ تی‌نیوز است.
+    """A class to read and iterate over the TNews corpus files.
 
     Args:
-        root: مسیر فولدر حاوی فایل‌های پیکره.
-
+        root (str): Path to the directory containing the corpus files.
     """
 
     def __init__(self: "TNewsReader", root: str) -> None:
+        """Initializes the TNewsReader with the root directory and a regex cleaner.
+
+        Args:
+            root (str): Path to the root folder of the corpus.
+        """
         self._root = root
         self.cleaner = re.compile(r"<[^<>]+>")
 
     def docs(self: "TNewsReader") -> Iterator[dict[str, str]]:
-        """خبرها را در قالب یک `iterator` برمی‌گرداند.
+        """Returns news articles as an iterator of dictionaries.
 
-        هر خبر، شی‌ای متشکل از چند پارامتر است:
-
-        - شناسه (id)،
-        - عنوان (title)،
-        - پیش از عنوان (pre-title)،
-        - پس از عنوان (post-title)،
-        - متن (text)،
-        - خلاصه (brief)،
-        - آدرس (url)،
-        - موضوع (category)،
-        - تاریخ و زمان انتشار (datetime).
+        Each news article is represented as a dictionary with the following keys:
+        - id: Unique identifier.
+        - title: The main title of the news.
+        - pre-title: Text appearing before the title.
+        - post-title: Text appearing after the title.
+        - text: The full content of the article.
+        - brief: A short summary of the article.
+        - url: The source URL.
+        - category: The news category or topic.
+        - datetime: The publication date and time.
 
         Examples:
             >>> tnews = TNewsReader(root='tnews')
@@ -43,11 +45,18 @@ class TNewsReader:
             '14092303482300013653'
 
         Yields:
-            (dict): خبر بعدی.
-
+            dict[str, str]: A dictionary containing the metadata and content of the next news article.
         """
 
-        def get_text(element: str) -> str:
+        def get_text(element: Any) -> str:
+            """Extracts raw text from an XML element and removes HTML tags.
+
+            Args:
+                element: The XML element node.
+
+            Returns:
+                str: Cleaned text content.
+            """
             raw_html = element.childNodes[0].data if element.childNodes else ""
             return re.sub(self.cleaner, "", raw_html)
 
@@ -57,10 +66,10 @@ class TNewsReader:
                     path = Path(root) / name
                     content = path.read_text(encoding="utf8")
 
-                    # fix xml formating issue
+                    # Fix XML formatting issues by removing control characters and closing the root tag
                     content = (
                         re.sub(
-                            r"[\x1B\b\x1A]",
+                            r"[\x1B\b\x1A]",
                             "",
                             content,
                         ).replace(
@@ -102,20 +111,19 @@ class TNewsReader:
                     print("error in reading", name, e, file=sys.stderr)
 
     def texts(self: "TNewsReader") -> Iterator[str]:
-        """فقط متن خبرها را برمی‌گرداند.
+        """Returns only the text content of the news articles.
 
-        این تابع صرفاً برای راحتی بیشتر تهیه شده وگرنه با همان تابع
-        ‍[docs()][hazm.corpus_readers.tnews_reader.TNewsReader.docs] و دریافت مقدار پراپرتی
-        `text` نیز می‌توانید همین کار را انجام دهید.
+        This is a convenience method. The same result can be achieved by iterating
+        through [docs()][hazm.corpus_readers.tnews_reader.TNewsReader.docs] and
+        accessing the 'text' key.
 
         Examples:
             >>> tnews = TNewsReader(root='tnews')
-            >>> next(tnews.texts()).startswith('به گزارش ”  شبکه اطلاع رسانی اینترنتی بوتیا  ” به نقل از ارگ نیوز')
+            >>> next(tnews.texts()).startswith('به گزارش "  شبکه اطلاع رسانی اینترنتی بوتیا  " به نقل از ارگ نیوز')
             True
 
         Yields:
-            متن خبر بعدی.
-
+            str: The text content of the next news article.
         """
         for doc in self.docs():
             yield doc["text"]

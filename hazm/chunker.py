@@ -1,5 +1,5 @@
 # hazm/chunker.py
-"""این ماژول شامل کلاس‌ها و توابعی برای تجزیهٔ متن به عبارات اسمی، فعلی و حرف است."""
+"""This module contains classes and functions for shallow parsing (chunking) of text into noun, verb, and prepositional phrases."""
 
 import logging
 import subprocess
@@ -29,7 +29,14 @@ logger = logging.getLogger(__name__)
 
 
 def tree2brackets(tree: Tree) -> str:
-    """خروجی درختی را به یک ساختار کروشه‌ای تبدیل می‌کند."""
+    """Converts a tree object to a bracketed string representation.
+
+    Args:
+        tree: The parse tree to be converted.
+
+    Returns:
+        A bracketed string representation of the tree.
+    """
     s, tag = "", ""
     for item in tree2conlltags(tree):
         word, _, chunk = item
@@ -49,7 +56,7 @@ def tree2brackets(tree: Tree) -> str:
 
 
 class Chunker(IOBTagger):
-    """این کلاس شامل توابعی برای تقطیع متن، آموزش و ارزیابی مدل است."""
+    """Class for chunking text, training, and evaluating chunker models."""
 
     def __init__(
         self,
@@ -86,7 +93,14 @@ class Chunker(IOBTagger):
         super().__init__(final_model_path, final_data_maker)
 
     def data_maker(self, tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
-        """تبدیل توکن‌ها به ویژگی‌ها."""
+        """Converts tokens into features.
+
+        Args:
+            tokens: A list of tagged sentences.
+
+        Returns:
+            A list of lists of feature dictionaries.
+        """
         words = [[word for word, _ in token] for token in tokens]
         tags = [[tag for _, tag in token] for token in tokens]
         return [
@@ -103,7 +117,16 @@ class Chunker(IOBTagger):
         pos_tags: list[str],
         index: int,
     ) -> dict[str, Any]:
-        """ویژگی‌های کلمه را برمی‌گرداند."""
+        """Extracts features for a word at a given index.
+
+        Args:
+            words: List of words in the sentence.
+            pos_tags: List of POS tags for the words.
+            index: The index of the word to extract features for.
+
+        Returns:
+            A dictionary of features.
+        """
         word_features = self.posTagger.features(words, index)
         word_features.update(
             {
@@ -124,7 +147,17 @@ class Chunker(IOBTagger):
         file_name: str = "chunker_crf.model",
         report_duration: bool = True,
     ) -> None:
-        """آموزش مدل."""
+        """Trains the chunker model.
+
+        Args:
+            trees: A list of parse trees for training.
+            c1: Coefficient for L1 regularization.
+            c2: Coefficient for L2 regularization.
+            max_iteration: Maximum number of iterations for training.
+            verbose: Whether to print verbose output.
+            file_name: The name of the file to save the trained model.
+            report_duration: Whether to report the training duration.
+        """
         tagged_list = [tree2conlltags(tree) for tree in trees]
         return super().train(
             tagged_list,
@@ -137,25 +170,47 @@ class Chunker(IOBTagger):
         )
 
     def parse(self, sentence: TaggedSentence) -> Tree:
-        """درخت تقطیع‌شدهٔ جمله را بر می‌گرداند."""
+        """Parses a tagged sentence into a chunk tree.
+
+        Args:
+            sentence: A tagged sentence.
+
+        Returns:
+            The parsed chunk tree.
+        """
         tagged = super().tag(sentence)
         return conlltags2tree(tagged)
 
     def parse_sents(self, sentences: list[TaggedSentence]) -> Iterator[Tree]:
-        """جملات ورودی را به‌شکل تقطیع‌شده برمی‌گرداند."""
+        """Parses a list of tagged sentences into chunk trees.
+
+        Args:
+            sentences: A list of tagged sentences.
+
+        Yields:
+            The parsed chunk tree for each sentence.
+        """
         for conlltagged in super().tag_sents(sentences):
             yield conlltags2tree(conlltagged)
 
     def evaluate(self, trees: list[Tree]) -> float:
-        """دقت مدل را برمی‌گرداند."""
+        """Evaluates the accuracy of the chunker.
+
+        Args:
+            trees: A list of gold standard parse trees.
+
+        Returns:
+            The accuracy of the chunker.
+        """
         tagged_sents = [tree2conlltags(tree) for tree in trees]
         return super().evaluate(tagged_sents)
 
 
 class RuleBasedChunker(RegexpParser):
-    """کلاس RuleBasedChunker."""
+    """Rule-based chunker using regular expressions."""
 
     def __init__(self) -> None:
+        """Constructor."""
         grammar = r"""
             NP:
                 <P>{<N>}<V>
@@ -187,7 +242,7 @@ class RuleBasedChunker(RegexpParser):
 
 
 class SpacyChunker(Chunker):
-    """A Chunker based on the Spacy library."""
+    """Chunker based on the Spacy library."""
 
     def __init__(
         self,
@@ -196,7 +251,14 @@ class SpacyChunker(Chunker):
         gpu_id: int = 0,
         repo_id: str | None = None,
     ) -> None:
-        """Initialize."""
+        """Constructor.
+
+        Args:
+            model_path: Path to the local Spacy model.
+            using_gpu: Whether to use GPU.
+            gpu_id: The ID of the GPU to use.
+            repo_id: Hugging Face repository ID.
+        """
         super().__init__()
         self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu
@@ -248,7 +310,11 @@ class SpacyChunker(Chunker):
         raise ValueError(msg)
 
     def _update_dictionary(self, sents: list[list[str]]) -> None:
-        """Add sentences to dictionary."""
+        """Adds sentences to the dictionary for custom tokenization.
+
+        Args:
+            sents: A list of sentences, where each sentence is a list of words.
+        """
         for sent in sents:
             key = " ".join(sent)
             if key not in self.peykare_dict:
@@ -289,7 +355,17 @@ class SpacyChunker(Chunker):
         output_dir: str,
         use_direct_config: bool = False,
     ) -> None:
-        """Train the spaCy chunker model."""
+        """Trains the spaCy chunker model.
+
+        Args:
+            train_dataset: The training dataset.
+            test_dataset: The testing dataset.
+            data_directory: Directory to save processed data.
+            base_config_file: Path to the base configuration file.
+            train_config_path: Path to the training configuration file.
+            output_dir: Directory to save the trained model.
+            use_direct_config: Whether to use the configuration file directly.
+        """
         if not use_direct_config:
             logger.info("Setting up training configuration...")
             self.train_config_file = train_config_path
@@ -332,7 +408,14 @@ class SpacyChunker(Chunker):
             self.model.tokenizer = self._custom_tokenizer
 
     def evaluate(self, test_sents: list[ChunkedSentence]) -> ChunkScore:
-        """Score the accuracy of the chunker."""
+        """Evaluates the accuracy of the chunker.
+
+        Args:
+            test_sents: A list of chunked sentences for testing.
+
+        Returns:
+            The chunk score.
+        """
         golds = test_sents
         # Extract sentence tuples for parsing
         test_inp = [
@@ -356,7 +439,14 @@ class SpacyChunker(Chunker):
         return chunkscore
 
     def parse(self, sentence: TaggedSentence) -> Tree:
-        """Parse a single sentence."""
+        """Parses a single sentence.
+
+        Args:
+            sentence: A tagged sentence.
+
+        Returns:
+            The parsed tree.
+        """
         tokens = [w for w, _ in sentence]
         if self.model is None:
              msg = "Model not loaded."
@@ -377,7 +467,15 @@ class SpacyChunker(Chunker):
         sentences: list[TaggedSentence],
         batch_size: int = 128,
     ) -> Iterator[Tree]:
-        """Parse multiple sentences."""
+        """Parses multiple sentences.
+
+        Args:
+            sentences: A list of tagged sentences.
+            batch_size: Batch size for processing.
+
+        Yields:
+            The parsed tree for each sentence.
+        """
         tokens_list = [[w for w, _ in sent] for sent in sentences]
         if self.model is None:
              msg = "Model not loaded."

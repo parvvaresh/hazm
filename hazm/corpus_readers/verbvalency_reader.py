@@ -1,20 +1,15 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ ظرفیت نحوی افعال فارسی
-است.
+"""This module includes classes and functions for reading the Persian Verb Valency Lexicon.
 
-پیکرهٔ ظرفیت نحوی افعال فارسی مجموعه‌ای است حاوی اطلاعات مربوط به ظرفیت نحوی
-بیش
-از ۴۵۰۰ فعل در زبان فارسی. در این فرهنگ، متمم‌های اجباری و اختیاری انواع
-فعل‌های
-ساده، مرکب، پیشوندی و عبارات فعلی مشخص شده است. فراوانی فعل‌های مرکب در زبان
-فارسی، نیاز به فرهنگ ظرفیت فعل را در این زبان دوچندان می‌نماید. چرا که شناخت
-فعل‌های مرکب چه از لحاظ انسانی و چه از لحاظ پردازشی کاری دشوار‌تر از شناخت
-فعل‌های ساده است و به همین خاطر فراهم آوردن فهرستی از فعل‌های زبان (که شامل
-فعل‌های مرکب نیز می‌شود) به همراه ساخت‌های ظرفیتی افعال، کمکی شایان برای کارهای
-پردازشی است. از سوی دیگر، بر اساس نظریه وابستگی، ساخت بنیادین جمله را می‌توان
-از
-روی ساخت ظرفیتی فعل جمله به دست آورد و به همین دلیل بر اهمیت دانستن ساخت‌های
-ظرفیتی فعل در متن‌های زبانی افزوده می‌شود.
-
+The Persian Verb Valency Lexicon is a collection containing valency information for
+more than 4,500 Persian verbs. This lexicon specifies obligatory and optional
+complements for various types of verbs: simple, compound, prefixed, and phrasal
+verbs. The high frequency of compound verbs in Persian doubles the need for a
+verb valency lexicon, as identifying compound verbs is more difficult than
+identifying simple ones for both humans and machines. Providing a list of verbs
+(including compound verbs) along with their valency structures is a significant
+help for NLP tasks. Furthermore, based on Dependency Theory, the fundamental
+structure of a sentence can be derived from the verb's valency, which adds to the
+importance of knowing these structures in linguistic texts.
 """
 
 
@@ -24,6 +19,16 @@ from typing import NamedTuple
 
 
 class Verb(NamedTuple):
+    """A named tuple representing a Persian verb and its valency properties.
+
+    Attributes:
+        past_light_verb: The past light verb.
+        present_light_verb: The present light verb.
+        prefix: The verb prefix.
+        nonverbal_element: The non-verbal element of a compound verb.
+        preposition: The associated preposition.
+        valency: The valency structure of the verb.
+    """
     past_light_verb: str
     present_light_verb: str
     prefix: str
@@ -33,24 +38,27 @@ class Verb(NamedTuple):
 
 
 class VerbValencyReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ ظرفیت نحوی افعال فارسی است.
+    """This class includes functions for reading the Persian Verb Valency Lexicon.
 
     Args:
-        valency_file: مسیر فایلِ پیکره.
-
+        valency_file: Path to the lexicon file.
     """
 
     def __init__(
         self: "VerbValencyReader", valency_file: str = "valency.txt",
     ) -> None:
+        """Initializes the VerbValencyReader.
+
+        Args:
+            valency_file: Path to the lexicon file. Defaults to "valency.txt".
+        """
         self._valency_file = valency_file
 
     def verbs(self: "VerbValencyReader") -> Iterator[Verb]:
-        """افعال پیکره را برمی‌گرداند.
+        """Iterates through the verbs in the lexicon.
 
         Yields:
-            فعل بعدی.
-
+            The next verb in the lexicon as a Verb object.
         """
         with Path.open(self._valency_file, encoding="utf-8") as valency_file:
             for line in valency_file:

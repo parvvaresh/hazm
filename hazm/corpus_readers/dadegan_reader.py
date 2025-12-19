@@ -1,7 +1,7 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ PerDT است.
+"""This module includes classes and functions for reading the PerDT corpus.
 
-PerDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
-
+PerDT contains a significant number of tagged sentences with syntactic and
+morphological information.
 """
 
 from collections.abc import Iterator
@@ -13,13 +13,18 @@ from nltk.tree import Tree
 
 
 def coarse_pos_u(tags: list[str], word: str) -> str:
-    """برچسب‌های ریز را به برچسب‌های درشت منطبق با استاندارد جهانی (coarse-grained
-    universal pos tags) تبدیل می‌کند.
+    """Converts fine-grained tags to coarse-grained universal POS tags.
 
     Examples:
-        >>> coarse_pos_e(['N', 'IANM'], 'امروز')
-        'N'
+        >>> coarse_pos_u(['N', 'IANM'], 'امروز')
+        'NOUN'
 
+    Args:
+        tags: A list of fine-grained tags.
+        word: The word associated with the tags.
+
+    Returns:
+        The corresponding coarse-grained universal POS tag.
     """
     mapping = {
         "N": "NOUN",
@@ -48,13 +53,19 @@ def coarse_pos_u(tags: list[str], word: str) -> str:
     return pos_mapped
 
 
-def coarse_pos_e(tags: list[str], word) -> str:  # noqa: ARG001
-    """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
+def coarse_pos_e(tags: list[str], word: str) -> str:  # noqa: ARG001
+    """Converts fine-grained tags to coarse-grained POS tags.
 
     Examples:
-        >>> coarse_pos_e(['N', 'IANM'],'امروز')
+        >>> coarse_pos_e(['N', 'IANM'], 'امروز')
         'N'
 
+    Args:
+        tags: A list of fine-grained tags.
+        word: The word associated with the tags.
+
+    Returns:
+        The corresponding coarse-grained POS tag.
     """
     mapping = {
         "N": "N",
@@ -74,45 +85,64 @@ def coarse_pos_e(tags: list[str], word) -> str:  # noqa: ARG001
 
 
 def word_nodes(tree: type[Tree]) -> list[dict[str, Any]]:
-    """نودها را به صورت مرتب‌شده برمی‌گرداند."""
+    """Returns the nodes of the tree in sorted order by their address.
+
+    Args:
+        tree: The dependency tree object.
+
+    Returns:
+        A sorted list of node dictionaries.
+    """
     return sorted(tree.nodes.values(), key=lambda node: node["address"])[1:]
 
 
 def node_deps(node: dict[str, Any]) -> list[Any]:
-    """مقادیر موجود در فیلد deps نود ورودی را برمی‌گرداند."""
+    """Returns the values found in the 'deps' field of the input node.
+
+    Args:
+        node: The node dictionary.
+
+    Returns:
+        A list of dependency addresses.
+    """
     return [dep for deps in node["deps"].values() for dep in deps]
 
 
 class DadeganReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ PerDT است.
+    """This class includes methods for reading the PerDT corpus.
 
     Args:
-        conll_file: مسیر فایلِ پیکره.
-        pos_map: دیکشنری مبدل برچسب‌های ریز به درشت.
-
+        conll_file: Path to the corpus file in CoNLL format.
+        pos_map: A function to map fine-grained tags to coarse-grained ones.
+        universal_pos: If `True`, uses universal POS tags.
     """
 
     def __init__(
         self: "DadeganReader",
         conll_file: str,
-        pos_map: str = coarse_pos_e,
+        pos_map: Any = coarse_pos_e,
         universal_pos: bool = False,
     ) -> None:
-        """Constructor."""
+        """Initializes the DadeganReader.
+
+        Args:
+            conll_file: Path to the corpus file.
+            pos_map: Function for mapping tags. Defaults to `coarse_pos_e`.
+            universal_pos: Whether to use universal POS mapping. Defaults to `False`.
+        """
         self._conll_file = conll_file
         if pos_map is None:
-            self._pos_map = lambda tags: ",".join(tags)
+            self._pos_map = lambda tags, _word: ",".join(tags)
         elif universal_pos:
             self._pos_map = coarse_pos_u
         else:
             self._pos_map = coarse_pos_e
 
     def _sentences(self: "DadeganReader") -> Iterator[str]:
-        """جملات پیکره را به شکل متن خام برمی‌گرداند.
+        """Yields sentences of the corpus as raw text.
 
         Yields:
-            جملهٔ بعدی.
-
+            The raw text of the next sentence.
         """
         with Path(self._conll_file).open(encoding="utf8") as conll_file:
             text = conll_file.read()
@@ -133,11 +163,10 @@ class DadeganReader:
                     yield item
 
     def trees(self: "DadeganReader") -> Iterator[type[Tree]]:
-        """ساختار درختی جملات را برمی‌گرداند.
+        """Yields the tree structure of sentences.
 
         Yields:
-            ساختار درختی جملهٔ بعدی.
-
+            The dependency tree of the next sentence.
         """
         top_label = getattr(self, "_top_relation_label", "ROOT")
         for sentence in self._sentences():
@@ -154,9 +183,7 @@ class DadeganReader:
             yield tree
 
     def sents(self: "DadeganReader") -> Iterator[list[tuple[str, str]]]:
-        """لیستی از جملات را برمی‌گرداند.
-
-        هر جمله لیستی از `(توکن، برچسب)`ها است.
+        """Returns a list of sentences, where each sentence is a list of (token, tag) tuples.
 
         Examples:
             >>> dadegan = DadeganReader(conll_file='dadegan.conll')
@@ -164,14 +191,13 @@ class DadeganReader:
             [('این', 'DET'), ('میهمانی', 'N'), ('به', 'P'), ('منظور', 'Ne'), ('آشنایی', 'Ne'), ('هم‌تیمی‌های', 'Ne'), ('او', 'PRO'), ('با', 'P'), ('غذاهای', 'Ne'), ('ایرانی', 'AJ'), ('ترتیب', 'N'), ('داده_شد', 'V'), ('.', 'PUNC')]
 
         Yields:
-            جملهٔ بعدی.
-
+            The next sentence as a list of (token, tag) tuples.
         """
         for tree in self.trees():
             yield [(node["word"], node["mtag"]) for node in word_nodes(tree)]
 
     def chunked_trees(self: "DadeganReader") -> Iterator[type[Tree]]:
-        """درخت وابستگی‌های جملات را برمی‌گرداند.
+        """Yields dependency trees of sentences with chunking information.
 
         Examples:
             >>> from hazm.chunker import tree2brackets
@@ -180,8 +206,7 @@ class DadeganReader:
             '[این میهمانی NP] [به PP] [منظور آشنایی هم‌تیمی‌های او NP] [با PP] [غذاهای ایرانی NP] [ترتیب داده_شد VP] .'
 
         Yields:
-            درخت وابستگی‌های جملهٔ بعدی.
-
+            The next sentence as a chunked tree structure.
         """
         for tree in self.trees():
             chunks = []

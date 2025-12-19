@@ -1,14 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای ریشه‌یابی کلمات است.
-
-فرق بین [Lemmatizer](./lemmatizer.md) و [Stemmer](./stemmer.md) این است که
-اِستمر درکی از معنای کلمه ندارد و صرفاً براساس حذف برخی از پسوندهای ساده تلاش
-می‌کند ریشهٔ کلمه را بیابد؛ بنابراین ممکن است در ریشه‌یابیِ برخی از کلمات نتایج
-نادرستی ارائه دهد؛ اما لماتایزر براساس لیستی از کلمات مرجع به همراه ریشهٔ آن
-این
-کار را انجام می‌دهد و نتایج دقیق‌تری ارائه می‌دهد. البته هزینهٔ این دقت، سرعتِ
-کمتر در ریشه‌یابی است.
-
-"""
+"""This module includes classes and functions for lemmatization."""
 
 from pathlib import Path
 
@@ -20,49 +10,119 @@ from hazm.word_tokenizer import WordTokenizer
 
 
 class Conjugation:
-    """این کلاس دارای توابعی برای صرف‌کردن افعال است."""
+    """This class contains functions for verb conjugation."""
 
     def perfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ مطلق صرف می‌کند."""
+        """Conjugates the verb in the simple past tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + x for x in ["م", "ی", "", "یم", "ید", "ند"]]
 
     def negative_perfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ مطلق به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple past tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.perfective_past(ri)]
 
     def passive_perfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ مطلق در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the simple past tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_past("شد")]
 
     def negative_passive_perfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ مطلق در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple past tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_perfective_past("شد")]
 
     def imperfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پایا صرف می‌کند."""
+        """Conjugates the verb in the past progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.perfective_past(ri)]
 
     def negative_imperfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_past(ri)]
 
     def passive_imperfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_past("شد")]
 
     def negative_passive_imperfective_past(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_imperfective_past("شد")]
 
     def past_progresive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ استمراری صرف می‌کند."""
+        """Conjugates the verb in the past continuous tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(self.perfective_past("داشت"), self.imperfective_past(ri), strict=False)
         ]
 
     def passive_past_progresive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ استمراری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past continuous tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -73,91 +133,224 @@ class Conjugation:
         ]
 
     def present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + x for x in ["ه‌ام", "ه‌ای", "ه است", "ه", "ه‌ایم", "ه‌اید", "ه‌اند"]]
 
     def negative_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.present_perfect(ri)]
 
     def subjunctive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه التزامی صرف می‌کند."""
+        """Conjugates the verb in the present perfect subjunctive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_present("باش")]
 
     def negative_subjunctive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه التزامی به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect subjunctive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.subjunctive_present_perfect(ri)]
 
     def grammatical_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه دستوری صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (grammatical).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + ("باش" if x == "باشی" else x)
             for x in self.perfective_present("باش")
         ]
 
     def negative_grammatical_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه دستوری به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (negative grammatical).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             "ن" + ri + "ه " + ("باش" if x == "باشی" else x)
             for x in self.perfective_present("باش")
         ]
 
     def passive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.present_perfect("شد")]
 
     def negative_passive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_present_perfect("شد")]
 
     def passive_subjunctive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه التزامی در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect subjunctive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.subjunctive_present_perfect("شد")]
 
     def negative_passive_subjunctive_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه التزامی در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect subjunctive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_subjunctive_present_perfect("شد")]
 
     def passive_grammatical_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه دستوری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (passive grammatical).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه شده " + ("باش" if x == "باشی" else x)
             for x in self.perfective_present("باش")
         ]
 
     def negative_passive_grammatical_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل در وجه دستوری در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect tense (negative passive grammatical).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه نشده " + ("باش" if x == "باشی" else x)
             for x in self.perfective_present("باش")
         ]
 
     def imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.present_perfect(ri)]
 
     def negative_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_present_perfect(ri)]
 
     def subjunctive_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا در وجه التزامی صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive subjunctive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.subjunctive_present_perfect(ri)]
 
     def negative_subjunctive_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا در وجه التزامی به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive subjunctive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.subjunctive_imperfective_present_perfect(ri)]
 
     def passive_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_present_perfect("شد")]
 
     def negative_passive_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_imperfective_present_perfect("شد")]
 
     def passive_subjunctive_imperfective_present_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل پایا در وجه التزامی در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive subjunctive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x for x in self.subjunctive_imperfective_present_perfect("شد")
         ]
@@ -165,14 +358,28 @@ class Conjugation:
     def negative_passive_subjunctive_imperfective_present_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان حال کامل پایا در وجه التزامی در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present perfect progressive subjunctive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x
             for x in self.negative_subjunctive_imperfective_present_perfect("شد")
         ]
 
     def present_perfect_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل استمراری صرف می‌کند."""
+        """Conjugates the verb in the present perfect continuous tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -183,7 +390,14 @@ class Conjugation:
         ]
 
     def passive_present_perfect_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان حال کامل استمراری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present perfect continuous tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -194,39 +408,102 @@ class Conjugation:
         ]
 
     def past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین صرف می‌کند."""
+        """Conjugates the verb in the past perfect tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_past("بود")]
 
     def negative_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.past_precedent(ri)]
 
     def passive_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.past_precedent("شد")]
 
     def negative_passive_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_past_precedent("شد")]
 
     def imperfective_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین پایا صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.past_precedent(ri)]
 
     def negative_imperfective_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_past_precedent(ri)]
 
     def passive_imperfective_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_past_precedent("شد")]
 
     def negative_passive_imperfective_past_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_imperfective_past_precedent("شد")]
 
     def past_precedent_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین استمراری صرف می‌کند."""
+        """Conjugates the verb in the past perfect continuous tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -237,7 +514,14 @@ class Conjugation:
         ]
 
     def passive_past_precedent_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین استمراری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect continuous tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -248,93 +532,219 @@ class Conjugation:
         ]
 
     def past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل صرف می‌کند."""
+        """Conjugates the verb in the past perfect perfective tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.present_perfect("بود")]
 
     def negative_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect perfective tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.past_precedent_perfect(ri)]
 
     def subjunctive_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه التزامی صرف می‌کند."""
+        """Conjugates the verb in the past perfect subjunctive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.subjunctive_present_perfect("بود")]
 
     def negative_subjunctive_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه التزامی به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect subjunctive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.subjunctive_past_precedent_perfect(ri)]
 
     def grammatical_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه دستوری صرف می‌کند."""
+        """Conjugates the verb in the past perfect grammatical tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه بوده " + ("باش" if x == "باشی" else x)
             for x in self.perfective_present("باش")
         ]
 
     def negative_grammatical_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه دستوری به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect grammatical tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.grammatical_past_precedent_perfect(ri)]
 
     def passive_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect perfective tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.past_precedent_perfect("شد")]
 
     def negative_passive_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect perfective tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_past_precedent_perfect("شد")]
 
     def passive_subjunctive_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه التزامی در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect subjunctive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.subjunctive_past_precedent_perfect("شد")]
 
     def negative_passive_subjunctive_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه التزامی در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect subjunctive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + "ن" + x for x in self.subjunctive_past_precedent_perfect("شد")
         ]
 
     def passive_grammatical_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه دستوری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect grammatical tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.grammatical_past_precedent_perfect("شد")]
 
     def negative_passive_grammatical_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل در وجه دستوری در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect grammatical tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x
             for x in self.negative_grammatical_past_precedent_perfect("شد")
         ]
 
     def imperfective_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.past_precedent_perfect(ri)]
 
     def negative_imperfective_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_past_precedent_perfect(ri)]
 
     def subjunctive_imperfective_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در وجه التزامی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive subjunctive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.subjunctive_past_precedent_perfect(ri)]
 
     def negative_subjunctive_imperfective_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در وجه التزامی به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive subjunctive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             "ن" + x for x in self.subjunctive_imperfective_past_precedent_perfect(ri)
         ]
 
     def passive_imperfective_past_precedent_perfect(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_past_precedent_perfect("شد")]
 
     def negative_passive_imperfective_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x
             for x in self.negative_imperfective_past_precedent_perfect("شد")
@@ -343,7 +753,14 @@ class Conjugation:
     def passive_subjunctive_imperfective_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در وجه التزامی در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive subjunctive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x
             for x in self.subjunctive_imperfective_past_precedent_perfect("شد")
@@ -352,14 +769,28 @@ class Conjugation:
     def negative_passive_subjunctive_imperfective_past_precedent_perfect(
         self, ri: str,
     ) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل پایا در وجه التزامی در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the past perfect progressive subjunctive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + "ن" + x
             for x in self.subjunctive_imperfective_past_precedent_perfect("شد")
         ]
 
     def past_precedent_perfect_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل استمراری صرف می‌کند."""
+        """Conjugates the verb in the past perfect continuous tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -370,7 +801,14 @@ class Conjugation:
         ]
 
     def passive_past_precedent_perfect_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان گذشتهٔ پیشین کامل استمراری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the past perfect continuous tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -381,84 +819,203 @@ class Conjugation:
         ]
 
     def perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق صرف می‌کند."""
+        """Conjugates the verb in the simple present tense.
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [rii + x for x in ["م", "ی", "د", "یم", "ید", "ند"]]
 
     def negative_perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple present tense (negative).
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.perfective_present(rii)]
 
     def subjunctive_perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه التزامی صرف می‌کند."""
+        """Conjugates the verb in the present subjunctive tense.
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ب" + x for x in self.perfective_present(rii)]
 
     def negative_subjunctive_perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه التزامی به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present subjunctive tense (negative).
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.perfective_present(rii)]
 
     def grammatical_perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه دستوری صرف می‌کند."""
+        """Conjugates the verb in the present grammatical tense.
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             "ببین" if x == "ببینی" else x
             for x in self.subjunctive_perfective_present(rii)
         ]
 
     def negative_grammatical_perfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه دستوری به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present grammatical tense (negative).
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             "ن" + ("بین" if x == "بینی" else x) for x in self.perfective_present(rii)
         ]
 
     def passive_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the simple present tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_present("شو")]
 
     def negative_passive_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple present tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_perfective_present("شو")]
 
     def passive_subjunctive_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه التزامی در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present subjunctive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.subjunctive_perfective_present("شو")]
 
     def negative_passive_subjunctive_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه التزامی در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present subjunctive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x for x in self.negative_subjunctive_perfective_present("شو")
         ]
 
     def passive_grammatical_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه دستوری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present grammatical tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + ("بشو" if x == "بشوی" else x)
             for x in self.grammatical_perfective_present("شو")
         ]
 
     def negative_passive_grammatical_perfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال مطلق در وجه دستوری در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present grammatical tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + ("نشو" if x == "نشوی" else x)
             for x in self.negative_grammatical_perfective_present("شو")
         ]
 
     def imperfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال پایا صرف می‌کند."""
+        """Conjugates the verb in the present progressive tense.
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.perfective_present(rii)]
 
     def negative_imperfective_present(self, rii: str) -> list[str]:
-        """فعل را در زمان حال پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present progressive tense (negative).
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_present(rii)]
 
     def passive_imperfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_present("شو")]
 
     def negative_passive_imperfective_present(self, ri: str) -> list[str]:
-        """فعل را در زمان حال پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the present progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_imperfective_present("شو")]
 
     def present_progressive(self, rii: str) -> list[str]:
-        """فعل را در زمان حال استمراری صرف می‌کند."""
+        """Conjugates the verb in the present continuous tense.
+
+        Args:
+            rii: The present verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -469,7 +1026,14 @@ class Conjugation:
         ]
 
     def passive_present_progressive(self, ri: str) -> list[str]:
-        """فعل را در زمان حال استمراری در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the present continuous tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             x + " " + y
             for x, y in zip(
@@ -480,79 +1044,191 @@ class Conjugation:
         ]
 
     def perfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ مطلق صرف می‌کند."""
+        """Conjugates the verb in the simple future tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [x + " " + ri for x in self.perfective_present("خواه")]
 
     def negative_perfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ مطلق به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple future tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.perfective_future(ri)]
 
     def passive_perfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ مطلق در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the simple future tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_future("شد")]
 
     def negative_passive_perfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ مطلق در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the simple future tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_perfective_future("شد")]
 
     def imperfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پایا صرف می‌کند."""
+        """Conjugates the verb in the future progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.perfective_future(ri)]
 
     def negative_imperfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.imperfective_future(ri)]
 
     def passive_imperfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the future progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.imperfective_future("شد")]
 
     def negative_passive_imperfective_future(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_imperfective_future("شد")]
 
     def future_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین صرف می‌کند."""
+        """Conjugates the verb in the future perfect tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.perfective_future("بود")]
 
     def negative_future_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future perfect tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.future_precedent(ri)]
 
     def passive_future_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the future perfect tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.future_precedent("شد")]
 
     def negative_passive_future_precedent(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future perfect tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.negative_future_precedent("شد")]
 
     def future_precedent_imperfective(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین پایا صرف می‌کند."""
+        """Conjugates the verb in the future perfect progressive tense.
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["می‌" + x for x in self.future_precedent(ri)]
 
     def negative_future_precedent_imperfective(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین پایا به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future perfect progressive tense (negative).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return ["ن" + x for x in self.future_precedent_imperfective(ri)]
 
     def passive_future_precedent_imperfective(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین پایا در حالت مجهول صرف می‌کند."""
+        """Conjugates the verb in the future perfect progressive tense (passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [ri + "ه " + x for x in self.future_precedent_imperfective("شد")]
 
     def negative_passive_future_precedent_imperfective(self, ri: str) -> list[str]:
-        """فعل را در زمان آیندهٔ پیشین پایا در حالت مجهول به‌شکل منفی صرف می‌کند."""
+        """Conjugates the verb in the future perfect progressive tense (negative passive).
+
+        Args:
+            ri: The verb root.
+
+        Returns:
+            A list of conjugated verbs.
+        """
         return [
             ri + "ه " + x for x in self.negative_future_precedent_imperfective("شد")
         ]
 
     def get_all(self, verb: str) -> list[str]:
-        """تمام صورت‌های صرفی فعل را در وجوه اخباری، التزامی، دستوری و در اشکال منفی و مثبت و مجهول برمی‌گرداند.
+        """Generates all conjugated forms of the verb.
 
         Args:
-            verb (str): فعلی که باید صرف شود. به‌صورت بن ماضی#بن مضارع؛ مانند: دید#بین.
+            verb: The verb to be conjugated.
 
         Returns:
-             لیست تمام صورت‌های صرفی فعل.
+            A list of all conjugated verb forms.
         """
         ri, rii = verb.split("#")
         infinitive = [ri + "ن"]
@@ -860,20 +1536,7 @@ class Conjugation:
 
 
 class Lemmatizer(LemmatizerProtocol):
-    """این کلاس شامل توابعی برای ریشه‌یابی کلمات است.
-
-    Args:
-        words_file: ریشه‌یابی کلمات از روی این فایل صورت
-            می‌گیرد. هضم به صورت پیش‌فرض فایلی برای این منظور در نظر گرفته است؛ با
-            این حال شما می‌توانید فایل موردنظر خود را معرفی کنید. برای آگاهی از
-            ساختار این فایل به فایل پیش‌فرض مراجعه کنید.
-        verbs_file: اشکال صرفی فعل از روی این فایل ساخته
-            می‌شود. هضم به صورت پیش‌فرض فایلی برای این منظور در نظر گرفته است؛ با
-            این حال شما می‌توانید فایل موردنظر خود را معرفی کنید. برای آگاهی از
-            ساختار این فایل به فایل پیش‌فرض مراجعه کنید.
-        joined_verb_parts: اگر `True` باشد افعال چندبخشی را با کاراکتر زیرخط به هم می‌چسباند.
-
-    """
+    """This class includes functions for lemmatizing words."""
 
     def __init__(
         self,
@@ -881,6 +1544,13 @@ class Lemmatizer(LemmatizerProtocol):
         verbs_file: str | Path = default_verbs,
         joined_verb_parts: bool = True,
     ) -> None:
+        """Constructor.
+
+        Args:
+            words_file: The file containing the words.
+            verbs_file: The file containing the verbs.
+            joined_verb_parts: If True, joins multi-part verbs with an underscore.
+        """
         self.words_file = words_file
         self.verbs: dict[str, str] = {}
         self.stemmer = Stemmer()
@@ -904,37 +1574,14 @@ class Lemmatizer(LemmatizerProtocol):
                         self.verbs[f"{before_verb}_{bon}"] = verb
 
     def lemmatize(self, word: str, pos: str = "") -> str:
-        """ریشهٔ کلمه را پیدا می‌کند.
-
-        پارامتر `pos` نوع کلمه است: (اسم، فعل، صفت و ...) و به این خاطر لازم
-        است که می‌تواند روی ریشه‌یابی کلمات اثر بگذارد؛ مثلاً واژهٔ «اجتماعی» در
-        جایگاه صفت (او یک فرد اجتماعی است)، ریشه‌اش همان «اجتماعی» می‌شود ولی
-        همین واژه در جایگاه اسم (اجتماعی از مردم)، ریشه‌اش می‌شود «اجتماع».
-
-        Examples:
-            >>> lemmatizer = Lemmatizer()
-            >>> lemmatizer.lemmatize('کتاب‌ها')
-            'کتاب'
-            >>> lemmatizer.lemmatize('آتشفشان')
-            'آتشفشان'
-            >>> lemmatizer.lemmatize('می‌روم')
-            'رفت#رو'
-            >>> lemmatizer.lemmatize('گفته_شده_است')
-            'گفت#گو'
-            >>> lemmatizer.lemmatize('نچشیده_است')
-            'چشید#چش'
-            >>> lemmatizer.lemmatize('مردم', pos='N')
-            'مردم'
-            >>> lemmatizer.lemmatize('اجتماعی', pos='ADJ')
-            'اجتماعی'
+        """Lemmatizes the given word.
 
         Args:
-            word: کلمه‌ای که باید پردازش شود.
-            pos: نوع کلمه. این پارامتر سه مقدار `VERB` (فعل) و `ADJ` (صفت) و `PRON` (ضمیر) را می‌پذیرد.
+            word: The word to be lemmatized.
+            pos: The part-of-speech tag of the word.
 
         Returns:
-            ریشهٔ کلمه
-
+            The lemma of the word.
         """
         if not pos and word in self.words:
             return word

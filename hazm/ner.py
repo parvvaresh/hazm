@@ -8,13 +8,14 @@ from tqdm import tqdm
 
 
 class HazmNER:
+    """Class for Named Entity Recognition using Hazm and spaCy."""
 
     def __init__(self, model_path, use_gpu=False) -> None:
         """Initialize the HazmNER object.
 
-        Parameters:
-            model_path (str): The path to the pre-trained NER model.
-            use_gpu (bool): Whether to use GPU for processing.
+        Args:
+            model_path: The path to the pre-trained NER model.
+            use_gpu: Whether to use GPU for processing.
         """
         self.model_path = model_path
         self.use_gpu = use_gpu
@@ -23,8 +24,8 @@ class HazmNER:
     def predict_entities(self, sentences):
         """Predict named entities in a list of sentences.
 
-        Parameters:
-            sentences (list of str): List of sentences to predict named entities.
+        Args:
+            sentences: List of sentences to predict named entities.
 
         Returns:
             list of list of tuple: Predicted named entities for each sentence.
@@ -38,8 +39,8 @@ class HazmNER:
     def predict_entity(self, sentence):
         """Predict named entities in a single sentence.
 
-        Parameters:
-            sentence (str): Input sentence to predict named entities.
+        Args:
+            sentence: Input sentence to predict named entities.
 
         Returns:
             list of tuple: Predicted named entities in the input sentence.
@@ -50,17 +51,17 @@ class HazmNER:
     def evaluate_model(self, dataset_path):
         """Evaluate the performance of the NER model on a dataset.
 
-        Parameters:
-            dataset_path (str): Path to the evaluation dataset.
+        Args:
+            dataset_path: Path to the evaluation dataset.
         """
         subprocess.run(f"python -m spacy evaluate {self.model_path} {dataset_path}", check=False)
 
     def _load_model(self, model_path, use_gpu):
         """Load the trained NER model.
 
-        Parameters:
-            model_path (str): Path to the trained model.
-            use_gpu (bool): Whether to use GPU for processing.
+        Args:
+            model_path: Path to the trained model.
+            use_gpu: Whether to use GPU for processing.
 
         Returns:
             spacy.Language: Loaded NER model.

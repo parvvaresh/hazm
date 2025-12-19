@@ -1,4 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
+"""This module contains classes and functions for tagging tokens."""
 
 import logging
 import time
@@ -20,7 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 def features(sent: list[Token], index: int) -> dict[str, Any]:
-    """فهرست فیچرها را برمی‌گرداند."""
+    """Returns a dictionary of features for the token at the given index in the sentence.
+
+    Args:
+        sent: The sentence containing the token.
+        index: The index of the token.
+
+    Returns:
+        A dictionary of features.
+    """
     return {
         "word": sent[index],
         "is_first": index == 0,
@@ -32,12 +40,28 @@ def features(sent: list[Token], index: int) -> dict[str, Any]:
 
 
 def data_maker(tokens: list[Sentence]) -> list[list[dict[str, Any]]]:
-    """تابع دیتا میکر پیش‌فرض."""
+    """Default data maker function.
+
+    Args:
+        tokens: A list of sentences.
+
+    Returns:
+        A list of lists of feature dictionaries.
+    """
     return [[features(sent, index) for index in range(len(sent))] for sent in tokens]
 
 
 def iob_features(words: list[str], pos_tags: list[str], index: int) -> dict[str, Any]:
-    """ویژگی‌های IOB را برمی‌گرداند (شامل تگ‌های POS)."""
+    """Returns IOB features (including POS tags).
+
+    Args:
+        words: List of words in the sentence.
+        pos_tags: List of POS tags for the words.
+        index: The index of the word.
+
+    Returns:
+        A dictionary of features.
+    """
     word_features = features(words, index)
     word_features.update(
         {
@@ -50,7 +74,14 @@ def iob_features(words: list[str], pos_tags: list[str], index: int) -> dict[str,
 
 
 def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
-    """تابع دیتا میکر مخصوص IOB (چون ورودی شامل POS Tag است)."""
+    """Data maker function for IOB tagging (includes POS tags).
+
+    Args:
+        tokens: A list of tagged sentences.
+
+    Returns:
+        A list of lists of feature dictionaries.
+    """
     words = [[word for word, _ in token] for token in tokens]
     tags = [[tag for _, tag in token] for token in tokens]
     return [
@@ -63,26 +94,43 @@ def iob_data_maker(tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
 
 
 class SequenceTagger:
-    """کلاس پایه برای برچسب‌گذاری توکن‌ها با استفاده از CRFSuite."""
+    """Base class for sequence tagging using CRFSuite."""
 
     def __init__(
         self,
         model: str | Path | None = None,
         data_maker: Callable = data_maker,
     ) -> None:
+        """Constructor.
+
+        Args:
+            model: Path to the model file.
+            data_maker: Function to generate features from tokens.
+        """
         self.model: Tagger | None = None
         if model is not None:
             self.load_model(model)
         self.data_maker = data_maker
 
     def load_model(self, model_path: str | Path) -> None:
-        """فایل تگر را بارگزاری می‌کند."""
+        """Loads the tagger model.
+
+        Args:
+            model_path: Path to the model file.
+        """
         tagger = Tagger()
         tagger.open(str(model_path))
         self.model = tagger
 
     def tag(self, tokens: Sentence) -> TaggedSentence:
-        """یک جمله را برچسب‌گذاری می‌کند."""
+        """Tags a single sentence.
+
+        Args:
+            tokens: A list of tokens representing a sentence.
+
+        Returns:
+            A tagged sentence.
+        """
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
@@ -93,7 +141,14 @@ class SequenceTagger:
         return list(zip(tokens, tags, strict=False))
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
-        """لیستی از جملات را برچسب‌گذاری می‌کند."""
+        """Tags multiple sentences.
+
+        Args:
+            sentences: A list of sentences to tag.
+
+        Returns:
+            A list of tagged sentences.
+        """
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
@@ -115,7 +170,17 @@ class SequenceTagger:
         file_name: str = "crf.model",
         report_duration: bool = True,
     ) -> None:
-        """مدل را آموزش می‌دهد."""
+        """Trains the model.
+
+        Args:
+            tagged_list: A list of tagged sentences for training.
+            c1: Coefficient for L1 regularization.
+            c2: Coefficient for L2 regularization.
+            max_iteration: Maximum number of iterations for training.
+            verbose: Whether to print verbose output.
+            file_name: The name of the file to save the trained model.
+            report_duration: Whether to report the training duration.
+        """
         trainer = Trainer(verbose=verbose)
         trainer.set_params({
             "c1": c1,
@@ -141,14 +206,25 @@ class SequenceTagger:
         self.load_model(file_name)
 
     def save_model(self, filename: str) -> None:
-        """مدل را ذخیره می‌کند."""
+        """Saves the model to a file.
+
+        Args:
+            filename: The name of the file to save the model.
+        """
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
         self.model.dump(filename)
 
     def evaluate(self, tagged_sent: list[TaggedSentence]) -> float:
-        """ارزیابی مدل."""
+        """Evaluates the model.
+
+        Args:
+            tagged_sent: A list of tagged sentences for evaluation.
+
+        Returns:
+            The accuracy of the model.
+        """
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
@@ -163,13 +239,19 @@ class SequenceTagger:
 
 
 class IOBTagger(SequenceTagger):
-    """کلاس IOBTagger برای تقطیع متن (Chunking)."""
+    """IOB Tagger class for text chunking."""
 
     def __init__(
         self,
         model: str | Path | None = None,
         data_maker: Callable = iob_data_maker,
     ) -> None:
+        """Constructor.
+
+        Args:
+            model: Path to the model file.
+            data_maker: Function to generate features.
+        """
         super().__init__(model, data_maker)
 
     def __iob_format(
@@ -177,19 +259,41 @@ class IOBTagger(SequenceTagger):
         tagged_data: TaggedSentence,
         chunk_tags: TaggedSentence,
     ) -> ChunkedSentence:
-        """فرمت خروجی را به صورت (word, pos, chunk) در می‌آورد."""
+        """Converts output to (word, pos, chunk) format.
+
+        Args:
+            tagged_data: The tagged sentence with POS tags.
+            chunk_tags: The chunk tags.
+
+        Returns:
+            A chunked sentence.
+        """
         return [
             (token[0], token[1], chunk_tag[1])
             for token, chunk_tag in zip(tagged_data, chunk_tags, strict=False)
         ]
 
     def tag(self, tagged_data: TaggedSentence) -> ChunkedSentence:
-        """یک جمله را برچسب‌گذاری IOB می‌کند."""
+        """Tags a single sentence with IOB tags.
+
+        Args:
+            tagged_data: A tagged sentence.
+
+        Returns:
+            A chunked sentence.
+        """
         chunk_tags = super().tag(tagged_data)
         return self.__iob_format(tagged_data, chunk_tags)
 
     def tag_sents(self, sentences: list[TaggedSentence]) -> list[ChunkedSentence]:
-        """لیستی از جملات را برچسب‌گذاری می‌کند."""
+        """Tags multiple sentences.
+
+        Args:
+            sentences: A list of tagged sentences.
+
+        Returns:
+            A list of chunked sentences.
+        """
         chunk_tags_list = super().tag_sents(sentences)
         return [
             self.__iob_format(tagged_data, chunks)
@@ -206,7 +310,17 @@ class IOBTagger(SequenceTagger):
         file_name: str = "crf.model",
         report_duration: bool = True,
     ) -> None:
-        """مدل را آموزش می‌دهد."""
+        """Trains the model.
+
+        Args:
+            tagged_list: A list of chunked sentences for training.
+            c1: Coefficient for L1 regularization.
+            c2: Coefficient for L2 regularization.
+            max_iteration: Maximum number of iterations for training.
+            verbose: Whether to print verbose output.
+            file_name: The name of the file to save the trained model.
+            report_duration: Whether to report the training duration.
+        """
         compatible_tagged_list = [
             [((word, tag), chunk) for word, tag, chunk in sent]
             for sent in tagged_list
@@ -223,7 +337,14 @@ class IOBTagger(SequenceTagger):
         )
 
     def evaluate(self, tagged_sent: list[ChunkedSentence]) -> float:
-        """ارزیابی مدل."""
+        """Evaluates the model.
+
+        Args:
+            tagged_sent: A list of chunked sentences for evaluation.
+
+        Returns:
+            The accuracy of the model.
+        """
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)

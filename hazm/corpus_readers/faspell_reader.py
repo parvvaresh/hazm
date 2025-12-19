@@ -1,41 +1,42 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ FAspell است.
+"""This module includes classes and functions for reading the FAspell corpus.
 
-پیکرهٔ [FAspell](https://lindat.mff.cuni.cz/repository/xmlui/handle/11372/LRT-1547) حاوی ۵۰۶۳ غلط املایی فارسی است.
-این پیکره همچنین ۸۰۱ تشخیص اشتباه سیستم‌های OCR را نیز در بر دارد.
-
+The [FAspell](https://lindat.mff.cuni.cz/repository/xmlui/handle/11372/LRT-1547)
+corpus contains 5,063 Persian spelling errors. This corpus also includes 801
+misidentifications by OCR systems.
 """
 from collections.abc import Iterator
 from pathlib import Path
 
 
 class FaSpellReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ FAspell است.
-
+    """This class includes functions for reading the FAspell corpus.
 
     Args:
-        corpus_folder: مسییر فولدر حاوی فایل‌های پیکره.
-
+        corpus_folder: Path to the folder containing the corpus files.
     """
 
     def __init__(self: "FaSpellReader", corpus_folder: str) -> None:
+        """Initializes the FAspell reader.
+
+        Args:
+            corpus_folder: Path to the folder containing the corpus files.
+        """
         self._corpus_folder = Path(corpus_folder)
         self._main_file_path = self._corpus_folder / "faspell_main.txt"
         self._ocr_file_path = self._corpus_folder / "faspell_ocr.txt"
 
-
-
     def main_entries(self: "FaSpellReader") -> Iterator[tuple[str, str, int]]:
-        """کلمات اشتباه و معادل درست آن‌ها را به همراه دسته‌بندی غلط در قالب یک تاپل `(شکل غلط کلمه، شکل صحیح کلمه، دسته‌بندی غلط)`، یک به یک برمی‌گرداند.
+        """Yields misspelled words, their correct forms, and error categories.
+
+        Each entry is returned as a tuple: (misspelled_form, correct_form, error_category).
 
         Examples:
             >>> faspell = FaSpellReader(corpus_folder='faspell')
             >>> next(faspell.main_entries())
-            ("آاهي","آگاهی",1)
-
+            ("آاهي", "آگاهی", 1)
 
         Yields:
-            مدخل بعدی.
-
+            The next entry in the main corpus.
         """
         with Path(self._main_file_path).open("r", encoding="utf-8") as file:
             next(file) # skip the first line (header line)
@@ -45,18 +46,17 @@ class FaSpellReader:
                 yield (misspelt, corrected, int(error_category))
 
     def ocr_entries(self: "FaSpellReader") -> Iterator[tuple[str, str]]:
-        """کلمات اشتباه ocr شده و معادل درست آن‌ها را در قالب یک تاپل `(شکل غلط کلمه، شکل صحیح کلمه)`، یک به یک برمی‌گرداند.
+        """Yields OCR-misidentified words and their correct equivalents.
 
+        Each entry is returned as a tuple: (misidentified_form, correct_form).
 
         Examples:
             >>> faspell = FaSpellReader(corpus_folder='faspell')
             >>> next(faspell.ocr_entries())
-            ("آمدیم","آ!دبم")
-
+            ("آمدیم", "آ!دبم")
 
         Yields:
-            مدخل بعدی.
-
+            The next OCR entry in the corpus.
         """
         with Path(self._ocr_file_path).open("r", encoding="utf-8") as file:
             next(file) # skip the first line (header line)

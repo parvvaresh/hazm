@@ -1,7 +1,7 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ تری‌بانک است.
+"""This module includes classes and functions for reading the Treebank corpus.
 
-پیکرهٔ تری‌بانک حاوی هزاران جملهٔ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
-
+The Treebank corpus contains thousands of tagged sentences with syntactic and
+morphological information.
 """
 
 
@@ -19,18 +19,17 @@ from ..word_tokenizer import WordTokenizer
 
 
 def coarse_pos_e(tags: list[str]) -> list[str]:
-    """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
+    """Converts fine-grained POS tags to coarse-grained POS tags.
 
     Examples:
         >>> coarse_pos_e(['Nasp---', 'pers', 'prop'])
         'N'
 
     Args:
-        tags: لیست برچسب‌های ریز.
+        tags: A list of fine-grained POS tags.
 
     Returns:
-        لیست برچسب‌های درشت.
-
+        The corresponding coarse-grained POS tag string.
     """
     mapping = {
         "N": "N",
@@ -66,14 +65,13 @@ def coarse_pos_e(tags: list[str]) -> list[str]:
 
 
 class TreebankReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ تری‌بانک است.
+    """This class includes functions for reading the Treebank corpus.
 
     Args:
-        root: مسیر فولدر حاوی فایل‌های پیکره
-        pos_map: دیکشنری مبدل برچسب‌های ریز به درشت.
-        join_clitics: اگر `True‍` باشد واژه‌بست‌ها را به کلمهٔ مادر می‌چسباند.
-        join_verb_parts: اگر `True` باشد افعال چندبخشی را با _ به هم می‌چسباند.
-
+        root: Path to the folder containing corpus files.
+        pos_map: A dictionary or function to convert fine-grained tags to coarse-grained.
+        join_clitics: If `True`, joins clitics to their parent word.
+        join_verb_parts: If `True`, joins multi-part verbs using an underscore.
     """
 
     def __init__(
@@ -83,6 +81,14 @@ class TreebankReader:
         join_clitics: bool = False,
         join_verb_parts: bool = False,
     ) -> None:
+        """Initializes the TreebankReader.
+
+        Args:
+            root: Path to the folder containing corpus files.
+            pos_map: A dictionary or function to convert fine-grained tags to coarse-grained.
+            join_clitics: If `True`, joins clitics to their parent word.
+            join_verb_parts: If `True`, joins multi-part verbs using an underscore.
+        """
         self._root = root
         self._pos_map = pos_map if pos_map else lambda tags: ",".join(tags)
         self._join_clitics = join_clitics
@@ -90,11 +96,10 @@ class TreebankReader:
         self._tokenizer = WordTokenizer()
 
     def docs(self: "TreebankReader") -> Iterator[Any]:
-        """اسناد موجود در پیکره را برمی‌گرداند.
+        """Yields the documents available in the corpus.
 
         Yields:
-            سند بعدی.
-
+            The next document (XML object).
         """
         def remove_blanks(node):
             for x in node.childNodes:
@@ -119,7 +124,7 @@ class TreebankReader:
                     print("error in reading", name, e, file=sys.stderr)
 
     def trees(self: "TreebankReader") -> Iterator[str]:
-        """ساختارهای درختی موجود در پیکره را برمی‌گرداند.
+        """Yields the tree structures available in the corpus.
 
         Examples:
             >>> treebank = TreebankReader(root='treebank')
@@ -132,10 +137,8 @@ class TreebankReader:
                   (V است/V)))
               (PUNC ./PUNC))
 
-
         Yields:
-            ساختار درختی بعدی.
-
+            The next tree structure in the corpus.
         """
 
         def traverse(node: str) -> Tree:
@@ -253,7 +256,7 @@ class TreebankReader:
                 yield traverse(s)
 
     def sents(self: "TreebankReader") -> Iterator[list[tuple[str, str]]]:
-        """جملات را به شکل مجموعه‌ای از `(توکن،برچسب)`ها برمی‌گرداند.
+        """Returns sentences as a list of (token, tag) tuples.
 
         Examples:
             >>> treebank = TreebankReader(root='treebank')
@@ -261,14 +264,13 @@ class TreebankReader:
             [('دنیای', 'Ne'), ('آدولف', 'N'), ('بورن', 'N'), ('دنیای', 'Ne'), ('اتفاقات', 'Ne'), ('رویایی', 'AJ'), ('است', 'V'), ('.', 'PUNC')]
 
         Yields:
-            جملهٔ بعدی.
-
+            The next sentence in the corpus.
         """
         for tree in self.trees():
             yield tree.leaves()
 
     def chunked_trees(self: "TreebankReader") -> Iterator[str]:
-        """ساختار درختی را به شکل تقطیع شده برمی‌گرداند.
+        """Returns the tree structure in a chunked format.
 
         Examples:
             >>> from hazm.chunker import tree2brackets
@@ -277,8 +279,7 @@ class TreebankReader:
             '[دنیای آدولف بورن NP] [دنیای اتفاقات رویایی NP] [است VP] .'
 
         Yields:
-            درخت تقطیع شدهٔ بعدی.
-
+            The next chunked tree structure.
         """
 
         def collapse(node, label):

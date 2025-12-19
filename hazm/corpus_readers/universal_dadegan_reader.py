@@ -1,5 +1,7 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ [PerUDT](https://github.com/phsfr/UD_Persian-PerDT) است.
-PerUDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
+"""This module includes classes and functions for reading the [PerUDT](https://github.com/phsfr/UD_Persian-PerDT) corpus.
+
+PerUDT contains a significant number of labeled sentences with syntactic and
+morphological information.
 """
 import sys
 from collections.abc import Iterator
@@ -9,7 +11,14 @@ from .dadegan_reader import DadeganReader
 
 
 def conllu2conll(conllu_path: str) -> str :
-    """یک فایل conllu را می‌گیرد و بعد از تبدیل به فرمت قدیمی conll آن را به صورت یک رشتهٔ متنی برمی‌گرداند."""
+    """Converts a CoNLL-U file to the old CoNLL format.
+
+    Args:
+        conllu_path: Path to the CoNLL-U file.
+
+    Returns:
+        The content of the file converted to CoNLL format as a string.
+    """
     delex = False
     if len(sys.argv) > 3 and sys.argv[3] == "delex":
         delex = True
@@ -39,22 +48,26 @@ def conllu2conll(conllu_path: str) -> str :
     return "".join(lines)
 
 class UniversalDadeganReader(DadeganReader):
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ PerUDT است.
+    """This class includes functions for reading the PerUDT corpus.
 
     Args:
-        conllu_file: مسیر فایلِ پیکره.
-
+        conllu_file: Path to the CoNLL-U corpus file.
     """
     def __init__(self: DadeganReader, conllu_file: str) -> None:
+        """Initializes the UniversalDadeganReader.
+
+        Args:
+            conllu_file: Path to the CoNLL-U corpus file.
+        """
         self._conll_file = conllu_file
         self._pos_map = lambda tags, _: ",".join(tags)
         self._top_relation_label = "root"
 
     def _sentences(self: DadeganReader) -> Iterator[str]:
-        """جملات پیکره را به شکل متن خام برمی‌گرداند.
+        """Yields sentences of the corpus in raw text format.
 
         Yields:
-            جملهٔ بعدی.
+            The next sentence in the corpus.
         """
         text = conllu2conll(self._conll_file)
 
@@ -65,4 +78,3 @@ class UniversalDadeganReader(DadeganReader):
         for item in text.replace(" ", "_").split("\n\n"):
             if item.strip():
                 yield item
-

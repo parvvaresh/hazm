@@ -1,4 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای برچسب‌گذاری توکن‌هاست."""
+"""This module contains classes and functions for POS tagging."""
 
 import logging
 import subprocess
@@ -28,7 +28,7 @@ PUNCTUATION_LIST = [
 
 
 class POSTagger(SequenceTagger, TaggerProtocol):
-    """این کلاس‌ها شامل توابعی برای برچسب‌گذاری توکن‌هاست."""
+    """Class for POS tagging."""
 
     def __init__(
         self,
@@ -67,20 +67,37 @@ class POSTagger(SequenceTagger, TaggerProtocol):
         super().__init__(final_model_path, final_data_maker)
 
     def __universal_converter(self, tagged_list: TaggedSentence) -> TaggedSentence:
+        """Converts POS tags to universal tags."""
         return [(word, tag.split(",")[0]) for word, tag in tagged_list]
 
     def __is_punc(self, word: str) -> bool:
+        """Checks if a word is punctuation."""
         return word in PUNCTUATION_LIST
 
     def data_maker(self, tokens: list[Sentence]) -> list[list[dict[str, Any]]]:
-        """تبدیل توکن‌ها به ویژگی‌ها."""
+        """Converts tokens into features.
+
+        Args:
+            tokens: A list of sentences, where each sentence is a list of tokens.
+
+        Returns:
+            A list of lists of feature dictionaries.
+        """
         return [
             [self.features(token, index) for index in range(len(token))]
             for token in tokens
         ]
 
     def features(self, sentence: Sentence, index: int) -> dict[str, Any]:
-        """استخراج ویژگی‌های یک کلمه در جمله."""
+        """Extracts features for a word at a given index.
+
+        Args:
+            sentence: The sentence containing the word.
+            index: The index of the word.
+
+        Returns:
+            A dictionary of features.
+        """
         word = sentence[index]
         return {
             "word": word,
@@ -119,7 +136,14 @@ class POSTagger(SequenceTagger, TaggerProtocol):
         }
 
     def tag(self, tokens: Sentence) -> TaggedSentence:
-        """یک جمله را برچسب‌گذاری می‌کند."""
+        """Tags a single sentence.
+
+        Args:
+            tokens: A list of tokens representing a sentence.
+
+        Returns:
+            A tagged sentence (list of (word, tag) tuples).
+        """
         tagged_token = super().tag(tokens)
         return (
             self.__universal_converter(tagged_token)
@@ -128,7 +152,14 @@ class POSTagger(SequenceTagger, TaggerProtocol):
         )
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
-        """جملات را برچسب‌گذاری می‌کند."""
+        """Tags multiple sentences.
+
+        Args:
+            sentences: A list of sentences to tag.
+
+        Returns:
+            A list of tagged sentences.
+        """
         tagged_sents = super().tag_sents(sentences)
         return (
             [self.__universal_converter(tagged_sent) for tagged_sent in tagged_sents]
@@ -138,7 +169,7 @@ class POSTagger(SequenceTagger, TaggerProtocol):
 
 
 class StanfordPOSTagger(stanford.StanfordPOSTagger):
-    """StanfordPOSTagger wrapper."""
+    """Wrapper for Stanford POS Tagger."""
 
     def __init__(
         self,
@@ -147,27 +178,48 @@ class StanfordPOSTagger(stanford.StanfordPOSTagger):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Constructor."""
+        """Constructor.
+
+        Args:
+            model_filename: Path to the model file.
+            path_to_jar: Path to the Stanford POS Tagger JAR file.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self._SEPARATOR = "/"
         super().__init__(
+            model_filename,
+            path_to_jar,
             *args,
-            model_filename=model_filename,
-            path_to_jar=path_to_jar,
             **kwargs,
         )
 
     def tag(self, tokens: Sentence) -> TaggedSentence:
-        """Tag a single sentence."""
+        """Tags a single sentence.
+
+        Args:
+            tokens: A list of tokens representing a sentence.
+
+        Returns:
+            A tagged sentence.
+        """
         return self.tag_sents([tokens])[0]
 
     def tag_sents(self, sentences: list[Sentence]) -> list[TaggedSentence]:
-        """Tag multiple sentences."""
+        """Tags multiple sentences.
+
+        Args:
+            sentences: A list of sentences to tag.
+
+        Returns:
+            A list of tagged sentences.
+        """
         refined = ([w.replace(" ", "_") for w in s] for s in sentences)
         return super().tag_sents(list(refined))
 
 
 class SpacyPOSTagger(POSTagger):
-    """Spacy Post Tagger class."""
+    """POS Tagger based on spaCy."""
 
     def __init__(
         self,
@@ -175,8 +227,17 @@ class SpacyPOSTagger(POSTagger):
         using_gpu: bool = False,
         gpu_id: int = 0,
         repo_id: str | None = None,
+        model_filename: str | None = None, # noqa: ARG002
     ) -> None:
-        """Initialize."""
+        """Constructor.
+
+        Args:
+            model_path: Path to the local model directory.
+            using_gpu: Whether to use GPU.
+            gpu_id: The ID of the GPU to use.
+            repo_id: Hugging Face repository ID.
+            model_filename: Filename (unused for spaCy models).
+        """
         super().__init__(universal_tag=True)
         self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu
@@ -187,6 +248,7 @@ class SpacyPOSTagger(POSTagger):
         if repo_id:
             try:
                 from huggingface_hub import snapshot_download
+                # spaCy models are usually a directory, so we download the whole repo
                 self.model_path = snapshot_download(repo_id=repo_id)
             except ImportError as e:
                 msg = "Please install `huggingface-hub` to use pretrained models from Hub."
@@ -202,7 +264,7 @@ class SpacyPOSTagger(POSTagger):
 
 
     def _setup(self) -> None:
-        """Set up GPU and Load Model."""
+        """Sets up the spaCy model and GPU if requested."""
         if self.using_gpu:
             self._setup_gpu()
         else:
@@ -213,7 +275,7 @@ class SpacyPOSTagger(POSTagger):
              self.tagger.tokenizer = self._custom_tokenizer
 
     def _setup_gpu(self) -> None:
-        """Check GPU availability."""
+        """Checks and sets up GPU availability."""
         logger.info("GPU Setup Process Started...")
         if spacy.prefer_gpu(gpu_id=self.gpu_id):
             logger.info("GPU is available and ready for use.")
@@ -224,13 +286,18 @@ class SpacyPOSTagger(POSTagger):
             self.gpu_availability = False
 
     def _custom_tokenizer(self, text: str) -> Doc:
+        """Custom tokenizer for spaCy."""
         if self.tagger and text in self.peykare_dict:
             return Doc(self.tagger.vocab, self.peykare_dict[text])
         msg = "No tokenization available for input."
         raise ValueError(msg)
 
     def _update_dictionary(self, sents: list[Sentence]) -> None:
-        """Add sentences to the custom tokenizer dictionary."""
+        """Adds sentences to the dictionary for custom tokenization.
+
+        Args:
+            sents: A list of sentences.
+        """
         for sent in sents:
             key = " ".join(sent)
             if key not in self.peykare_dict:
@@ -242,6 +309,13 @@ class SpacyPOSTagger(POSTagger):
         saved_directory: str,
         data_type: str = "train",
     ) -> None:
+        """Prepares dataset for spaCy training.
+
+        Args:
+            dataset: The dataset to prepare.
+            saved_directory: Directory to save the prepared data.
+            data_type: 'train' or 'test'.
+        """
         assert data_type in ["train", "test"]
         db = DocBin()
         for sent in tqdm(dataset):
@@ -259,7 +333,15 @@ class SpacyPOSTagger(POSTagger):
         db.to_disk(f"{saved_directory}/{data_type}.spacy")
 
     def tag(self, tokens: Sentence, universal_tag: bool = True) -> TaggedSentence:
-        """Tag a single sentence."""
+        """Tags a single sentence.
+
+        Args:
+            tokens: A list of tokens representing a sentence.
+            universal_tag: Whether to use universal POS tags.
+
+        Returns:
+            A tagged sentence.
+        """
         if self.tagger is None:
              msg = "Model is not loaded. Please provide model_path in init."
              raise ValueError(msg)
@@ -282,7 +364,16 @@ class SpacyPOSTagger(POSTagger):
         universal_tag: bool = True,
         batch_size: int = 128,
     ) -> list[TaggedSentence]:
-        """Tag sentences."""
+        """Tags multiple sentences.
+
+        Args:
+            sents: A list of sentences to tag.
+            universal_tag: Whether to use universal POS tags.
+            batch_size: Batch size for processing.
+
+        Returns:
+            A list of tagged sentences.
+        """
         if self.tagger is None:
              msg = "Model is not loaded."
              raise ValueError(msg)
@@ -316,7 +407,17 @@ class SpacyPOSTagger(POSTagger):
         output_dir: str,
         use_direct_config: bool = False,
     ) -> None:
-        """Train the spaCy model."""
+        """Trains the spaCy model.
+
+        Args:
+            train_dataset: The training dataset.
+            test_dataset: The testing dataset.
+            data_directory: Directory to save processed data.
+            base_config_file: Path to the base configuration file.
+            train_config_path: Path to the training configuration file.
+            output_dir: Directory to save the trained model.
+            use_direct_config: Whether to use the configuration file directly.
+        """
         self.spacy_train_directory = data_directory
 
         if train_dataset:
@@ -358,7 +459,12 @@ class SpacyPOSTagger(POSTagger):
             self.tagger.tokenizer = self._custom_tokenizer
 
     def evaluate(self, test_sents: list[TaggedSentence], batch_size: int = 128) -> None:
-        """Evaluate the model."""
+        """Evaluates the model.
+
+        Args:
+            test_sents: A list of tagged sentences for testing.
+            batch_size: Batch size for processing.
+        """
         tokens_list = [[w for w, _ in sent] for sent in test_sents]
         self._update_dictionary(tokens_list)
 
@@ -381,6 +487,7 @@ class SpacyPOSTagger(POSTagger):
         predictions: list[list[str]],
         use_ez_tags: bool,
     ) -> None:
+        """Helper function to evaluate tags."""
         predictions_cleaned = []
         golds_cleaned = []
 

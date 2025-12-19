@@ -1,15 +1,12 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ همشهری است.
+"""This module includes classes and functions for reading the Hamshahri corpus.
 
-[پیکرهٔ
-همشهری](https://www.peykaregan.ir/dataset/%D9%85%D8%AC%D9%85%D9%88%D8%B9%D9%87-
-%D9%87%D9%85%D8%B4%D9%87%D8%B1%DB%8C) حاوی
-۳۱۸ هزار خبر از روزنامه همشهری از سال‌های ۱۳۷۵ تا ۱۳۸۶ است. این داده‌ها با
-crawl
-کردن وب‌سایت همشهری و گذر از چندمرحله پیش‌پردازش و برچسب‌زنی تهیه شده است. همهٔ
-این خبرها دارای برچسب CAT بوده و رده‌بندی موضوعی آن مشخص است. این پیکره توسط
-گروه تحقیقاتی پایکاه دادهٔ دانشگاه تهران و با حمایت مرکز تحقیقات مخابرات ایران
-تهیه شده است.
-
+The [Hamshahri Corpus](https://www.peykaregan.ir/dataset/%D9%85%D8%AC%D9%85%D9%88%D8%B9%D9%87-%D9%87%D9%85%D8%B4%D9%87%D8%B1%DB%8C)
+contains 318,000 news items from the Hamshahri newspaper from 1996 to 2007 (1375 to 1386 AP).
+This data was prepared by crawling the Hamshahri website and undergoing several stages
+of preprocessing and labeling. All news items have a CAT label, and their thematic
+classification is specified. This corpus was prepared by the Database Research
+Group of the University of Tehran with the support of the Iran Telecommunication
+Research Center (ITRC).
 """
 
 
@@ -22,14 +19,18 @@ from xml.dom import minidom
 
 
 class HamshahriReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ همشهری است.
+    """This class includes functions for reading the Hamshahri corpus.
 
     Args:
-        root: مسیر فولدرِ حاوی فایل‌های پیکرهٔ همشهری.
-
+        root: Path to the folder containing the Hamshahri corpus files.
     """
 
     def __init__(self: "HamshahriReader", root: str) -> None:
+        """Initializes the Hamshahri reader.
+
+        Args:
+            root: Path to the folder containing the Hamshahri corpus files.
+        """
         self._root = root
         self._invalids = {
             "hamshahri.dtd",
@@ -80,15 +81,15 @@ class HamshahriReader:
         self._paragraph_pattern = re.compile(r"(\n.{0,50})(?=\n)")
 
     def docs(self: "HamshahriReader") -> Iterator[dict[str, str]]:
-        """خبرها را برمی‌گرداند.
+        """Yields news documents from the corpus.
 
-        هر خبر، شی‌ای متشکل از این پارامتر است:
-
-        - شناسه (`id`)
-        - عنوان (`title`)
-        - متن (`text`)
-        - شماره (`issue`)
-        - موضوعات (`categories`)
+        Each news item is a dictionary containing the following keys:
+        - `id`: Unique identifier.
+        - `title`: News title.
+        - `text`: News content.
+        - `issue`: Issue number.
+        - `categories_{lang}`: Thematic categories (e.g., `categories_fa`).
+        - `date`: News date (Persian).
 
         Examples:
             >>> hamshahri = HamshahriReader(root='hamshahri')
@@ -96,8 +97,7 @@ class HamshahriReader:
             'HAM2-750403-001'
 
         Yields:
-            خبر بعدی.
-
+            The next news document dictionary.
         """
         for root, _dirs, files in os.walk(self._root):
             for name in sorted(files):
@@ -151,15 +151,15 @@ class HamshahriReader:
                     print("error in reading", name, e, file=sys.stderr)
 
     def texts(self: "HamshahriReader") -> Iterator[str]:
-        """فقط متن خبرها را در قالب یک برمی‌گرداند.
+        """Yields only the text content of the news items.
 
-        این تابع صرفاً برای راحتی بیشتر تهیه شده وگرنه با تابع
-        ‍[docs()][hazm.corpus_readers.hamshahri_reader.HamshahriReader.docs] و دریافت مقدار
-        پراپرتی `text` نیز می‌توانید همین کار را انجام دهید.
+        This function is provided for convenience. The same result can be
+        achieved by using the
+        [docs()][hazm.corpus_readers.hamshahri_reader.HamshahriReader.docs]
+        method and accessing the `text` field.
 
         Yields:
-            متنِ خبر بعدی.
-
+            The text content of the next news item.
         """
         for doc in self.docs():
             yield doc["text"]

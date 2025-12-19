@@ -6,7 +6,14 @@ from typing import Any
 
 
 def get_data_path(filename: str) -> Path:
-    """مسیر فایل داده را به صورت Zip-safe برمی‌گرداند."""
+    """Returns the data file path in a zip-safe manner.
+
+    Args:
+        filename: The name of the data file.
+
+    Returns:
+        The path to the specified data file.
+    """
     return importlib.resources.files("hazm") / "data" / filename
 
 default_words = get_data_path("words.dat")
@@ -19,11 +26,26 @@ abbreviations = get_data_path("abbreviations.dat")
 NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 
 def maketrans(a: str, b: str) -> dict[int, Any]:
-    """هر یک از حروف رشتهٔ a را به یک حرف در رشتهٔ b مپ می‌کند."""
+    """Maps each character in string `a` to the corresponding character in string `b`.
+
+    Args:
+        a: A string of characters to be replaced.
+        b: A string of characters to replace with.
+
+    Returns:
+        A dictionary mapping character ordinals to their replacements.
+    """
     return {ord(a): b for a, b in zip(a, b, strict=False)}
 
 def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, tuple[str, ...]]]:
-    """لیست کلمات را برمی‌گرداند."""
+    """Returns a list of words from the specified file.
+
+    Args:
+        words_file: Path to the words file. Defaults to `default_words`.
+
+    Returns:
+        A list of tuples, each containing (word, count, categories).
+    """
     file_path = Path(words_file) if isinstance(words_file, str) else words_file
 
     with file_path.open(encoding="utf-8") as file:
@@ -35,19 +57,34 @@ def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, t
         ]
 
 def stopwords_list(stopwords_file: str | Path = default_stopwords) -> list[str]:
-    """لیست ایست‌واژه‌ها را برمی‌گرداند."""
+    """Returns a sorted list of stopwords.
+
+    Args:
+        stopwords_file: Path to the stopwords file. Defaults to `default_stopwords`.
+
+    Returns:
+        A sorted list of unique stopwords.
+    """
     file_path = Path(stopwords_file) if isinstance(stopwords_file, str) else stopwords_file
 
     with file_path.open(encoding="utf-8") as file:
         return sorted({w.strip() for w in file})
 
 def verbs_list() -> list[str]:
-    """لیست افعال را برمی‌گرداند."""
+    """Returns a list of verbs from the default verbs file.
+
+    Returns:
+        A list of verbs.
+    """
     with default_verbs.open(encoding="utf-8") as verbs_file:
         return [line.strip() for line in verbs_file]
 
 def past_roots() -> str:
-    """لیست بن‌های گذشته را برمی‌گرداند."""
+    """Returns a string of past roots joined by a pipe character.
+
+    Returns:
+        A string containing all past roots, suitable for use in regex.
+    """
     roots = []
     for verb in verbs_list():
         split = verb.split("#")
@@ -55,7 +92,11 @@ def past_roots() -> str:
     return "|".join(roots)
 
 def present_roots() -> str:
-    """لیست بن‌های مضارع را برمی‌گرداند."""
+    """Returns a string of present roots joined by a pipe character.
+
+    Returns:
+        A string containing all present roots, suitable for use in regex.
+    """
     roots = []
     for verb in verbs_list():
         split = verb.split("#")
@@ -63,7 +104,15 @@ def present_roots() -> str:
     return "|".join(roots)
 
 def regex_replace(patterns: list[tuple[str, str]], text: str) -> str:
-    """الگوی ریجکس را یافته و با متن داده شده جایگزین می‌کند."""
+    """Finds regex patterns and replaces them with the given text.
+
+    Args:
+        patterns: A list of tuples, each containing (pattern, replacement).
+        text: The input text to be processed.
+
+    Returns:
+        The modified text after all replacements.
+    """
     for pattern, repl in patterns:
         if isinstance(pattern, str):
             text = re.sub(pattern, repl, text)

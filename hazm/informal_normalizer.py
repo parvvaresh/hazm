@@ -1,4 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای نرمال‌سازی متن‌های محاوره‌ای است."""
+"""This module contains classes and functions for normalizing informal text."""
 
 
 import re
@@ -16,15 +16,7 @@ from hazm.word_tokenizer import WordTokenizer
 
 
 class InformalNormalizer(Normalizer):
-    """این کلاس شامل توابعی برای نرمال‌سازی متن‌های محاوره‌ای است.
-
-    Args:
-        verb_file: فایل حاوی افعال محاوره‌ای.
-        word_file: فایل حاوی کلمات محاوره‌ای.
-        seperation_flag: اگر `True` باشد و در بخشی از متن به فاصله نیاز بود آن فاصله درج می‌شود.
-        **kargs: پارامترهای نامدارِ اختیاری
-
-    """
+    """This class contains functions for normalizing informal text."""
 
     def __init__(
         self: "InformalNormalizer",
@@ -33,6 +25,14 @@ class InformalNormalizer(Normalizer):
         seperation_flag: bool = False,
         **kargs: str,
     ) -> None:
+        """Constructor.
+
+        Args:
+            verb_file: Path to the file containing informal verbs.
+            word_file: Path to the file containing informal words.
+            seperation_flag: If True, adds spaces where necessary in parts of the text.
+            **kargs: Optional keyword arguments.
+        """
         self.seperation_flag = seperation_flag
         self.lemmatizer = Lemmatizer()
         self.ilemmatizer = InformalLemmatizer()
@@ -96,19 +96,13 @@ class InformalNormalizer(Normalizer):
             self.words.update(list(self.lemmatizer.verbs.values()))
 
     def split_token_words(self: "InformalNormalizer", token: str) -> str:
-        """هرجایی در متن فاصله نیاز بود قرار می‌دهد.
-
-        متأسفانه در برخی از متن‌ها، به بهانهٔ صرفه‌جویی در زمان یا از سرِ تنبلی،
-        فاصله‌گذاری‌ها درست رعایت نمی‌شود. مثلاً جملهٔ «تو را دوست دارم.» به این
-        شکل نوشته می‌شود: «تورادوست دارم.» این تابع فواصل ضروری را در متن
-        ایجاد می‌کند و آن را به شکل صحیح برمی‌گرداند.
+        """Inserts spaces where necessary in the token.
 
         Args:
-            token: توکنی که باید فاصله‌گذاری شود.
+            token: The token to be processed.
 
         Returns:
-            توکنی با فاصله‌گذاری صحیح.
-
+            The token with correct spacing.
         """
 
         def shekan(token):
@@ -141,19 +135,13 @@ class InformalNormalizer(Normalizer):
         return token
 
     def normalized_word(self: "InformalNormalizer", word: str) -> list[str]:
-        """اشکال مختلف نرمالایزشدهٔ کلمه را برمی‌گرداند.
-
-        Examples:
-            >>> normalizer = InformalNormalizer()
-            >>> normalizer.normalized_word('می‌رم')
-            ['می‌روم', 'می‌رم']
+        """Returns the normalized forms of the word.
 
         Args:
-            word: کلمه‌ای که باید نرمال‌سازی شود.
+            word: The word to be normalized.
 
         Returns:
-            اشکال نرمالایزشدهٔ کلمه.
-
+            A list of normalized forms of the word.
         """
         # >>> normalizer = InformalNormalizer(seperation_flag=True)
         # >>> normalizer.normalized_word('صداوسیماجمهوری')
@@ -743,22 +731,13 @@ class InformalNormalizer(Normalizer):
         return possible_words
 
     def normalize(self: "InformalNormalizer", text: str) -> list[list[list[str]]]:
-        """متن محاوره‌ای را به متن فارسی معیار تبدیل می‌کند.
-
-        Examples:
-            >>> normalizer = InformalNormalizer()
-            >>> normalizer.normalize('بابا یه شغل مناسب واسه بچه هام پیدا کردن که به جایی برنمیخوره !')
-            [[['بابا'], ['یک'], ['شغل'], ['مناسب'], ['برای'], ['بچه'], ['هایم'], ['پیدا'], ['کردن', 'کردند'], ['که'], ['به'], ['جایی'], ['برنمی\u200cخورد', 'برنمی\u200cخوره'], ['!']]]
-            >>> normalizer = InformalNormalizer()
-            >>> normalizer.normalize('اجازه بدیم همسرمون در جمع خانواده‌اش احساس آزادی کنه و فکر نکنه که ما دائم هواسمون بهش هست .')
-            [[['اجازه'], ['بدهیم'], ['همسرمان'], ['در'], ['جمع'], ['خانواده\u200cاش'], ['احساس'], ['آزادی'], ['کند'], ['و'], ['فکر'], ['نکند', 'نکنه'], ['که'], ['ما'], ['دائم'], ['حواسمان'], ['بهش'], ['هست'], ['.']]]
+        """Converts informal text to standard Persian text.
 
         Args:
-            text: متن محاوره‌ای که باید تبدیل به متن فارسی معیار شود.
+            text: The informal text to be normalized.
 
         Returns:
-           متن فارسی معیار.
-
+            A list of lists of lists of strings, representing the normalized text structure.
         """
         text = super().normalize(text)
         sents = [
@@ -769,14 +748,13 @@ class InformalNormalizer(Normalizer):
         return [[self.normalized_word(word) for word in sent] for sent in sents]
 
     def informal_conjugations(self: "InformalNormalizer", verb: str) -> list[str]:
-        """صورت‌های صرفی فعل را در شکل محاوره‌ای تولید می‌کند.
+        """Generates informal conjugations of a verb.
 
         Args:
-            verb: فعلی که باید صرف شود.
+            verb: The verb to be conjugated.
 
         Returns:
-            صورت‌های صرفی فعل.
-
+            A list of informal conjugations.
         """
         ends = ["م", "ی", "", "یم", "ین", "ن"]
         present_simples = [verb + end for end in ends]
@@ -802,10 +780,10 @@ class InformalNormalizer(Normalizer):
 
 
 class InformalLemmatizer(Lemmatizer):
-    """این کلاس شامل توابعی برای نرمال‌سازی متن‌های محاوره‌ای است."""
+    """This class includes functions for lemmatizing informal text."""
 
     def __init__(self: "InformalNormalizer", **kargs: str) -> None:
-        """__init__."""
+        """Constructor."""
         super().__init__(**kargs)
 
         temp = []
@@ -831,7 +809,7 @@ class InformalLemmatizer(Lemmatizer):
             self.words.update([x.strip().split(" ", 1)[0] for x in wf])
 
     def iconjugations(self: "InformalNormalizer", verb: str):
-        """Iconjugations."""
+        """Generates informal conjugations."""
         ends = ["م", "ی", "", "یم", "ین", "ن"]
         present_simples = [verb + end for end in ends]
         if verb.endswith("ا"):

@@ -1,4 +1,4 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای شناساییِ وابستگی‌های دستوری متن است."""
+"""This module includes classes and functions for identifying grammatical dependencies in text."""
 
 import logging
 import os
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class MaltParser(NLTKMaltParser):
-    """این کلاس شامل توابعی برای شناسایی وابستگی‌های دستوری است."""
+    """This class includes functions for identifying grammatical dependencies."""
 
     def __init__(
         self,
@@ -72,7 +72,15 @@ class MaltParser(NLTKMaltParser):
 
 
     def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
-        """گراف وابستگی را برمی‌گرداند."""
+        """Returns the dependency graph.
+
+        Args:
+            sentences: A list of sentences to be parsed.
+            verbose: If True, prints verbose output.
+
+        Yields:
+            A dependency graph for each sentence.
+        """
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.parse_tagged_sents(tagged_sentences, verbose)
 
@@ -81,7 +89,15 @@ class MaltParser(NLTKMaltParser):
         sentences: list[TaggedSentence],
         verbose: bool = False,
     ) -> Iterator[DependencyGraph]:
-        """گراف وابستگی‌ها را برای جملات ورودی برمی‌گرداند."""
+        """Returns dependency graphs for input sentences.
+
+        Args:
+            sentences: A list of tagged sentences.
+            verbose: If True, prints verbose output.
+
+        Yields:
+            A dependency graph for each sentence.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             input_path = Path(temp_dir) / "malt_input.conll"
             output_path = Path(temp_dir) / "malt_output.conll"
@@ -134,7 +150,16 @@ class SpacyDependencyParser(MaltParser):
         gpu_id: int = 0,
         repo_id: str | None = None,
     ) -> None:
-        """Initialize."""
+        """Initialize.
+
+        Args:
+            tagger: The POS tagger instance.
+            lemmatizer: The lemmatizer instance.
+            model_path: Path to the local Spacy model.
+            using_gpu: Whether to use GPU.
+            gpu_id: The ID of the GPU to use.
+            repo_id: Hugging Face repository ID.
+        """
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
@@ -196,11 +221,25 @@ class SpacyDependencyParser(MaltParser):
                 self.peykare_dict[key] = sent
 
     def parse(self, sentence: list[str]) -> DependencyGraph:
-        """Parse a single sentence."""
+        """Parse a single sentence.
+
+        Args:
+            sentence: A list of words in the sentence.
+
+        Returns:
+            The parsed dependency graph.
+        """
         return next(self.parse_sents([sentence]))
 
     def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
-        """Parse multiple sentences."""
+        """Parse multiple sentences.
+
+        Args:
+            sentences: A list of sentences, where each sentence is a list of words.
+
+        Yields:
+            The parsed dependency graph for each sentence.
+        """
         if self.model is None:
              msg = "Model not loaded."
              raise ValueError(msg)
@@ -236,4 +275,3 @@ class SpacyDependencyParser(MaltParser):
 
             conll_str = "\n".join(conll_lines)
             yield DependencyGraph(conll_str, top_relation_label="root")
-
