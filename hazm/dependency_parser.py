@@ -30,32 +30,15 @@ class MaltParser(NLTKMaltParser):
         repo_id: str | None = None,
         model_filename: str | None = None,
     ) -> None:
-        """Constructor.
-
-        Examples:
-            >>> from hazm import POSTagger, Lemmatizer
-            >>> tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
-            >>> lemmatizer = Lemmatizer()
-            >>> # Loading from Hugging Face Hub
-            >>> parser = MaltParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-dependency-parser", model_filename="langModel.mco")
-            >>> # Loading from a local model file
-            >>> # parser = MaltParser(tagger=tagger, lemmatizer=lemmatizer, working_dir='universal_dependency_parser', model_file='langModel.mco')
-
-        Args:
-            tagger: The POS tagger instance.
-            lemmatizer: The lemmatizer instance.
-            working_dir: The directory containing the MaltParser jar and model (local mode).
-            model_file: The name of the model file (e.g., 'langModel.mco').
-            repo_id: Hugging Face repository ID (e.g., "roshan-research/hazm-dependency-parser").
-            model_filename: Filename inside the repository (e.g., "langModel.mco").
-        """
+        """Constructor."""
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
 
         final_working_dir = working_dir
-        final_model_file = model_file
+        # مدل نباید در پارامتر ورودی مالت‌پارسر پسوند .mco داشته باشد
+        final_model_file = model_file.replace(".mco", "")
         final_malt_bin = Path(working_dir) / "malt.jar"
 
         if repo_id and model_filename:
@@ -65,7 +48,8 @@ class MaltParser(NLTKMaltParser):
                 cache_dir = snapshot_download(repo_id=repo_id)
 
                 final_working_dir = cache_dir
-                final_model_file = model_filename
+                # حذف پسوند .mco برای HF
+                final_model_file = model_filename.replace(".mco", "")
                 final_malt_bin = Path(cache_dir) / "malt.jar"
 
             except ImportError as e:
@@ -79,23 +63,8 @@ class MaltParser(NLTKMaltParser):
         self.mco = final_model_file
         self._malt_bin = final_malt_bin
 
-
     def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
-        """Returns the dependency graph.
-
-        Examples:
-            >>> graphs = parser.parse_sents([['من', 'به', 'مدرسه', 'رفتم', '.']])
-            >>> graph = next(graphs)
-            >>> print(graph.tree())
-            (رفتم من (به مدرسه) .)
-
-        Args:
-            sentences: A list of sentences to be parsed.
-            verbose: If True, prints verbose output.
-
-        Yields:
-            A dependency graph for each sentence.
-        """
+        """Returns the dependency graph."""
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.parse_tagged_sents(tagged_sentences, verbose)
 
@@ -104,21 +73,7 @@ class MaltParser(NLTKMaltParser):
         sentences: list[TaggedSentence],
         verbose: bool = False,
     ) -> Iterator[DependencyGraph]:
-        """Returns dependency graphs for input sentences.
-
-        Examples:
-            >>> tagged_sentences = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN'), ('رفتم', 'VERB'), ('.', 'PUNCT')]]
-            >>> graphs = parser.parse_tagged_sents(tagged_sentences)
-            >>> print(next(graphs).tree())
-            (رفتم من (به مدرسه) .)
-
-        Args:
-            sentences: A list of tagged sentences.
-            verbose: If True, prints verbose output.
-
-        Yields:
-            A dependency graph for each sentence.
-        """
+        """Returns dependency graphs for input sentences."""
         with tempfile.TemporaryDirectory() as temp_dir:
             input_path = Path(temp_dir) / "malt_input.conll"
             output_path = Path(temp_dir) / "malt_output.conll"
@@ -133,6 +88,7 @@ class MaltParser(NLTKMaltParser):
                         )
                     input_file.write("\n\n")
 
+            # تمامی مسیرها با str() به رشته تبدیل شدند تا در لینوکس/کولب خطا ندهند
             cmd = [
                 "java",
                 "-jar",
@@ -150,7 +106,9 @@ class MaltParser(NLTKMaltParser):
             ]
 
             if self._execute(cmd, verbose) != 0:
-                msg = f"MaltParser parsing failed: {' '.join(cmd)}"
+                # تبدیل cmd به رشته برای نمایش در پیام خطا
+                full_cmd = " ".join(str(x) for x in cmd)
+                msg = f"MaltParser parsing failed. Command: {full_cmd}"
                 raise Exception(msg)
 
             with Path(output_path).open(encoding="utf8") as output_file:
@@ -171,25 +129,7 @@ class SpacyDependencyParser(MaltParser):
         gpu_id: int = 0,
         repo_id: str | None = None,
     ) -> None:
-        """Initialize.
-
-        Examples:
-            >>> from hazm import POSTagger, Lemmatizer
-            >>> tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
-            >>> lemmatizer = Lemmatizer()
-            >>> # Loading from Hugging Face Hub
-            >>> parser = SpacyDependencyParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-spacy-dependency-parser")
-            >>> # Loading from a local model directory
-            >>> # parser = SpacyDependencyParser(tagger=tagger, lemmatizer=lemmatizer, model_path='path/to/spacy_model')
-
-        Args:
-            tagger: The POS tagger instance.
-            lemmatizer: The lemmatizer instance.
-            model_path: Path to the local Spacy model.
-            using_gpu: Whether to use GPU.
-            gpu_id: The ID of the GPU to use.
-            repo_id: Hugging Face repository ID.
-        """
+        """Initialize."""
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
@@ -251,36 +191,11 @@ class SpacyDependencyParser(MaltParser):
                 self.peykare_dict[key] = sent
 
     def parse(self, sentence: list[str]) -> DependencyGraph:
-        """Parse a single sentence.
-
-        Examples:
-            >>> graph = parser.parse(['من', 'به', 'مدرسه', 'رفتم', '.'])
-            >>> print(graph.tree())
-            (رفتم من (به مدرسه) .)
-
-        Args:
-            sentence: A list of words in the sentence.
-
-        Returns:
-            The parsed dependency graph.
-        """
+        """Parse a single sentence."""
         return next(self.parse_sents([sentence]))
 
     def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
-        """Parse multiple sentences.
-
-        Examples:
-            >>> graphs = parser.parse_sents([['من', 'به', 'مدرسه', 'رفتم', '.']])
-            >>> graph = next(graphs)
-            >>> print(graph.tree())
-            (رفتم من (به مدرسه) .)
-
-        Args:
-            sentences: A list of sentences, where each sentence is a list of words.
-
-        Yields:
-            The parsed dependency graph for each sentence.
-        """
+        """Parse multiple sentences."""
         if self.model is None:
              msg = "Model not loaded."
              raise ValueError(msg)
