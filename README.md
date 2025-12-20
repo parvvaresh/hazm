@@ -43,48 +43,75 @@ When using Hazm, simply provide the `repo_id` and `model_filename` as shown in t
 ```python
 from hazm import *
 
-# --- Normalizer ---
-normalizer = Normalizer()
-print(normalizer.normalize('اصلاح نويسه ها و استفاده از نیم‌فاصله پردازش را آسان مي كند'))
-# 'اصلاح نویسه‌ها و استفاده از نیم‌فاصله پردازش را آسان می‌کند'
-
-# --- Tokenizer ---
-print(sent_tokenize('ما هم برای وصل کردن آمدیم! ولی برای پردازش، جدا بهتر نیست؟'))
-# ['ما هم برای وصل کردن آمدیم!', 'ولی برای پردازش، جدا بهتر نیست؟']
-print(word_tokenize('ولی برای پردازش، جدا بهتر نیست؟'))
-# ['ولی', 'برای', 'پردازش', '،', 'جدا', 'بهتر', 'نیست', '؟']
-# --- Stemmer & Lemmatizer ---
+# ===============================
+# Stemming
+# ===============================
 stemmer = Stemmer()
-print(stemmer.stem('کتاب‌ها')) # 'کتاب'
+stem = stemmer.stem('کتاب‌ها')
+print(stem) # کتاب
 
+# ===============================
+# Normalizing
+# ===============================
+normalizer = Normalizer()
+normalized_text = normalizer.normalize('من کتاب های زیــــادی دارم .')
+print(normalized_text) # من کتاب‌های زیادی دارم.
+
+# ===============================
+# Lemmatizing
+# ===============================
 lemmatizer = Lemmatizer()
-print(lemmatizer.lemmatize('می‌روم')) # 'رفت#رو'
+lem = lemmatizer.lemmatize('می‌نویسیم')
+print(lem) # نوشت#نویس
 
-# --- POS Tagger (Automatic download from Hugging Face) ---
-tagger = POSTagger(repo_id="roshan-research/hazm-pos-tagger", model_filename="pos_tagger.model")
-print(tagger.tag(word_tokenize('ما بسیار کتاب می‌خوانیم')))
-# [('ما', 'PRO'), ('بسیار', 'ADV'), ('کتاب', 'N'), ('می‌خوانیم', 'V')]
+# ===============================
+# Sentence tokenizing
+# ===============================
+sentence_tokenizer = SentenceTokenizer()
+sent_tokens = sentence_tokenizer.tokenize('ما کتاب می‌خوانیم. یادگیری خوب است.')
+print(sent_tokens) # ['ما کتاب می\u200cخوانیم.', 'یادگیری خوب است.']
 
-# --- Chunker (Automatic download from Hugging Face) ---
+# ===============================
+# Word tokenizing
+# ===============================
+word_tokenizer = WordTokenizer()
+word_tokens = word_tokenizer.tokenize('ما کتاب می‌خوانیم')
+print(word_tokens) # ['ما', 'کتاب', 'می\u200cخوانیم']
+
+# ===============================
+# Part of speech tagging
+# ===============================
+tagger = POSTagger(repo_id="roshan-research/hazm-postagger", model_filename="pos_tagger.model")
+tagged_words = tagger.tag(word_tokens)
+print(tagged_words) # [('ما', 'PRON'), ('کتاب', 'NOUN'), ('می\u200cخوانیم', 'VERB')]
+
+# ===============================
+# Chunking
+# ===============================
 chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
-tagged = tagger.tag(word_tokenize('کتاب خواندن را دوست داریم'))
-print(tree2brackets(chunker.parse(tagged)))
-# '[کتاب خواندن NP] [را POSTP] [دوست داریم VP]'
+chunked_tree = tree2brackets(chunker.parse(tagged_words))
+print(chunked_tree) # [ما NP] [کتاب NP] [می‌خوانیم VP]
 
-# --- Word Embedding (Automatic download from Hugging Face) ---
+# ===============================
+# Word embedding
+# ===============================
 word_embedding = WordEmbedding.load(repo_id='roshan-research/hazm-word-embedding', model_filename='fasttext_skipgram_300.bin', model_type='fasttext')
-print(word_embedding.doesnt_match(['سلام', 'درود', 'خداحافظ', 'پنجره'])) # 'پنجره'
+odd_word = word_embedding.doesnt_match(['کتاب', 'دفتر', 'قلم', 'پنجره'])
+print(odd_word) # پنجره
 
-# --- Sent Embedding (Automatic download from Hugging Face) ---
+# ===============================
+# Sentence embedding
+# ===============================
 sent_embedding = SentEmbedding.load(repo_id='roshan-research/hazm-sent-embedding', model_filename='sent2vec-naab.model')
-vector = sent_embedding.get_sentence_vector('این یک جمله نمونه برای تبدیل به بردار است.')
-print(sent_embedding.similarity('شیر حیوانی وحشی است', 'پلنگ از دیگر جانوران درنده است'))
-# 0.85 (مثلا)
+sentence_similarity = sent_embedding.similarity('او شیر میخورد','شیر غذا می‌خورد')
+print(sentence_similarity) # 0.4643607437610626
 
-# --- Dependency Parser ---
+# ===============================
+# Dependency parsing
+# ===============================
 parser = DependencyParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-dependency-parser", model_filename="langModel.mco")
-graph = parser.parse(word_tokenize('زنگ‌ها برای که به صدا درمی‌آید؟'))
-print(graph)
+dependency_graph = parser.parse(word_tokens)
+print(dependency_graph)
 ```
 
 ## Documentation
