@@ -155,7 +155,7 @@ print(dependency_graph)
 
 ## Documentation
 
-Visit https://roshan-ai.ir/hazm/docs to view the full documentation.
+Visit https://roshan-ai.ir/hazm to view the full documentation.
 
 ## Evaluation
 
