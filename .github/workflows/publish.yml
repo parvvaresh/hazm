@@ -11,11 +11,16 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v5
+
     - name: Install and configure Poetry
       uses: snok/install-poetry@v1
       with:
         virtualenvs-create: false
         virtualenvs-in-project: false
+      
+    - name: Configure Poetry to use Python 3.12
+      run: poetry env use python3.12
+
     - name: Publish to pypi
       run: |
         poetry config pypi-token.pypi ${{secrets.PYPI_TOKEN}}
