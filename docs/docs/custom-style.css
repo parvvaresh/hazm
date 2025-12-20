@@ -69,7 +69,6 @@ pre {
 .md-sidebar--secondary[data-md-type="toc"] .md-nav__link {
     display: block;
     direction: ltr;
-    text-align: right;
 }
 
 .doc-contents a,
@@ -79,7 +78,6 @@ pre {
 }
 
 .footnote code {
-    direction: rtl;
     font-family: "Shabnam";
 }
 
@@ -128,8 +126,4 @@ table:not(.highlighttable) tr {
 }
 .doc .md-typeset__table tr {
   display: table-row;
-}
-
-dir-rtl * {
-    direction: rtl !important;
 }
