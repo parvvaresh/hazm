@@ -112,6 +112,45 @@ print(sentence_similarity) # 0.4643607437610626
 parser = DependencyParser(tagger=tagger, lemmatizer=lemmatizer, repo_id="roshan-research/hazm-dependency-parser", model_filename="langModel.mco")
 dependency_graph = parser.parse(word_tokens)
 print(dependency_graph)
+"""
+{0:  {'address': 0,
+      'ctag': 'TOP',
+      'deps': defaultdict(<class 'list'>, {'root': [3]}),
+      'feats': None,
+      'head': None,
+      'lemma': None,
+      'rel': None,
+      'tag': 'TOP',
+      'word': None},
+  1: {'address': 1,
+      'ctag': 'PRON',
+      'deps': defaultdict(<class 'list'>, {}),
+      'feats': '_',
+      'head': 3,
+      'lemma': 'ما',
+      'rel': 'SBJ',
+      'tag': 'PRON',
+      'word': 'ما'},
+  2: {'address': 2,
+      'ctag': 'NOUN',
+      'deps': defaultdict(<class 'list'>, {}),
+      'feats': '_',
+      'head': 3,
+      'lemma': 'کتاب',
+      'rel': 'OBJ',
+      'tag': 'NOUN',
+      'word': 'کتاب'},
+  3: {'address': 3,
+      'ctag': 'VERB',
+      'deps': defaultdict(<class 'list'>, {'SBJ': [1], 'OBJ': [2]}),
+      'feats': '_',
+      'head': 0,
+      'lemma': 'خواند#خوان',
+      'rel': 'root',
+      'tag': 'VERB',
+      'word': 'می\u200cخوانیم'}})
+
+"""
 ```
 
 ## Documentation
