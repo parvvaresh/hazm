@@ -5,6 +5,8 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/hazm)
 ![GitHub](https://img.shields.io/github/license/roshan-research/hazm)
 
+[![sample](documentation/assets/sample.png)](documentation/assets/sample.png)
+
 ## Introduction
 
 [**Hazm**](https://www.roshan-ai.ir/hazm/) is a python library to perform natural language processing tasks on Persian text. It offers various features for analyzing, processing, and understanding Persian text. You can use Hazm to normalize text, tokenize sentences and words, lemmatize words, assign part-of-speech tags, identify dependency relations, create word and sentence embeddings, or read popular Persian corpora.
