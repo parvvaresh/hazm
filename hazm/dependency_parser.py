@@ -2,6 +2,8 @@
 
 import logging
 import os
+import shutil
+import subprocess
 import tempfile
 from collections.abc import Iterator
 from pathlib import Path
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class MaltParser(NLTKMaltParser):
-    """This class includes functions for identifying grammatical dependencies."""
+    """This class includes functions for identifying grammatical dependencies using MaltParser."""
 
     def __init__(
         self,
@@ -30,16 +32,15 @@ class MaltParser(NLTKMaltParser):
         repo_id: str | None = None,
         model_filename: str | None = None,
     ) -> None:
-        """Constructor."""
+        """Constructor for MaltParser."""
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
 
-        final_working_dir = working_dir
-        # مدل نباید در پارامتر ورودی مالت‌پارسر پسوند .mco داشته باشد
-        final_model_file = model_file.replace(".mco", "")
-        final_malt_bin = Path(working_dir) / "malt.jar"
+        self._final_working_dir = working_dir
+        self._model_base_name = model_file.replace(".mco", "")
+        self._malt_bin_path = Path(working_dir) / "malt.jar"
 
         if repo_id and model_filename:
             try:
@@ -47,10 +48,9 @@ class MaltParser(NLTKMaltParser):
 
                 cache_dir = snapshot_download(repo_id=repo_id)
 
-                final_working_dir = cache_dir
-                # حذف پسوند .mco برای HF
-                final_model_file = model_filename.replace(".mco", "")
-                final_malt_bin = Path(cache_dir) / "malt.jar"
+                self._final_working_dir = cache_dir
+                self._model_base_name = model_filename.replace(".mco", "")
+                self._malt_bin_path = Path(cache_dir) / "malt.jar"
 
             except ImportError as e:
                 msg = "Please install `huggingface-hub` to use pretrained models from Hub."
@@ -59,26 +59,40 @@ class MaltParser(NLTKMaltParser):
                 msg = f"Failed to download model from {repo_id}: {e}"
                 raise ValueError(msg) from e
 
-        self.working_dir = final_working_dir
-        self.mco = final_model_file
-        self._malt_bin = final_malt_bin
-
     def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
-        """Returns the dependency graph."""
+        """Returns the dependency graph for a list of sentences."""
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.parse_tagged_sents(tagged_sentences, verbose)
 
     def parse_tagged_sents(
         self,
         sentences: list[TaggedSentence],
-        verbose: bool = False,
+        _verbose: bool = False,
     ) -> Iterator[DependencyGraph]:
-        """Returns dependency graphs for input sentences."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            input_path = Path(temp_dir) / "malt_input.conll"
-            output_path = Path(temp_dir) / "malt_output.conll"
+        """Returns dependency graphs for input sentences by executing MaltParser JAR."""
+        # Check if Java is installed
+        try:
+            subprocess.run(["java", "-version"], capture_output=True, check=True)
 
-            with Path(input_path).open("w", encoding="utf8") as input_file:
+        except Exception as e:
+            msg = f"Java is required to run MaltParser, but it is not installed or not found in PATH: {e}"
+            raise RuntimeError(msg) from e
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "malt_input.conll"
+            output_path = temp_path / "malt_output.conll"
+
+            # Copy model file to temp directory to avoid permission issues in restricted environments (like Colab)
+            model_source = Path(self._final_working_dir) / f"{self._model_base_name}.mco"
+            if not model_source.exists():
+                msg = f"Model file not found at {model_source}"
+                raise FileNotFoundError(msg)
+
+            shutil.copy(str(model_source), str(temp_path))
+
+            # Create input CoNLL file
+            with input_path.open("w", encoding="utf8") as input_file:
                 for sentence in sentences:
                     for i, (word, tag) in enumerate(sentence, start=1):
                         word = word.strip() or "_"
@@ -88,15 +102,16 @@ class MaltParser(NLTKMaltParser):
                         )
                     input_file.write("\n\n")
 
-            # تمامی مسیرها با str() به رشته تبدیل شدند تا در لینوکس/کولب خطا ندهند
+            # Command list - all items converted to str
             cmd = [
                 "java",
+                "-Xmx512m",
                 "-jar",
-                str(self._malt_bin),
+                str(self._malt_bin_path),
                 "-w",
-                str(self.working_dir),
+                str(temp_dir),
                 "-c",
-                str(self.mco),
+                str(self._model_base_name),
                 "-i",
                 str(input_path),
                 "-o",
@@ -105,19 +120,22 @@ class MaltParser(NLTKMaltParser):
                 "parse",
             ]
 
-            if self._execute(cmd, verbose) != 0:
-                # تبدیل cmd به رشته برای نمایش در پیام خطا
-                full_cmd = " ".join(str(x) for x in cmd)
-                msg = f"MaltParser parsing failed. Command: {full_cmd}"
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+
+            if process.returncode != 0:
+                msg = f"MaltParser execution failed.\nSTDOUT: {stdout}\nSTDERR: {stderr}"
                 raise Exception(msg)
 
-            with Path(output_path).open(encoding="utf8") as output_file:
+            # Parse results
+            with output_path.open(encoding="utf8") as output_file:
                 content = output_file.read()
                 for item in content.split("\n\n"):
                     if item.strip():
                         yield DependencyGraph(item, top_relation_label="root")
 
-class SpacyDependencyParser(MaltParser):
+
+class SpacyDependencyParser:
     """A Dependency Parser based on the Spacy library."""
 
     def __init__(
@@ -129,7 +147,7 @@ class SpacyDependencyParser(MaltParser):
         gpu_id: int = 0,
         repo_id: str | None = None,
     ) -> None:
-        """Initialize."""
+        """Initialize Spacy-based parser."""
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
@@ -195,7 +213,7 @@ class SpacyDependencyParser(MaltParser):
         return next(self.parse_sents([sentence]))
 
     def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
-        """Parse multiple sentences."""
+        """Parse multiple sentences using Spacy pipeline."""
         if self.model is None:
              msg = "Model not loaded."
              raise ValueError(msg)
