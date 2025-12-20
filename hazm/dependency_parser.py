@@ -1,7 +1,6 @@
 """This module includes classes and functions for identifying grammatical dependencies in text."""
 
 import logging
-import os
 import shutil
 import subprocess
 import tempfile
@@ -40,7 +39,6 @@ class MaltParser(NLTKMaltParser):
 
         self._final_working_dir = working_dir
         self._model_base_name = model_file.replace(".mco", "")
-        self._malt_bin_path = Path(working_dir) / "malt.jar"
 
         if repo_id and model_filename:
             try:
@@ -50,7 +48,6 @@ class MaltParser(NLTKMaltParser):
 
                 self._final_working_dir = cache_dir
                 self._model_base_name = model_filename.replace(".mco", "")
-                self._malt_bin_path = Path(cache_dir) / "malt.jar"
 
             except ImportError as e:
                 msg = "Please install `huggingface-hub` to use pretrained models from Hub."
@@ -67,15 +64,14 @@ class MaltParser(NLTKMaltParser):
     def parse_tagged_sents(
         self,
         sentences: list[TaggedSentence],
-        _verbose: bool = False,
+        verbose: bool = False, # noqa: ARG002
     ) -> Iterator[DependencyGraph]:
-        """Returns dependency graphs for input sentences by executing MaltParser JAR."""
+        """Returns dependency graphs for input sentences by executing MaltParser."""
         # Check if Java is installed
         try:
             subprocess.run(["java", "-version"], capture_output=True, check=True)
-
         except Exception as e:
-            msg = f"Java is required to run MaltParser, but it is not installed or not found in PATH: {e}"
+            msg = "Java is not installed. Please install JRE/JDK (e.g., !apt-get install default-jre)."
             raise RuntimeError(msg) from e
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -83,15 +79,25 @@ class MaltParser(NLTKMaltParser):
             input_path = temp_path / "malt_input.conll"
             output_path = temp_path / "malt_output.conll"
 
-            # Copy model file to temp directory to avoid permission issues in restricted environments (like Colab)
-            model_source = Path(self._final_working_dir) / f"{self._model_base_name}.mco"
+            source_dir = Path(self._final_working_dir)
+
+            # 1. Copy Model File (.mco)
+            model_source = source_dir / f"{self._model_base_name}.mco"
             if not model_source.exists():
                 msg = f"Model file not found at {model_source}"
                 raise FileNotFoundError(msg)
-
             shutil.copy(str(model_source), str(temp_path))
 
-            # Create input CoNLL file
+            # 2. Copy ALL .jar files (Flattening structure)
+            jars = list(source_dir.rglob("*.jar"))
+            if not jars:
+                msg = f"No .jar files found in {source_dir}. MaltParser requires malt.jar and dependencies."
+                raise FileNotFoundError(msg)
+
+            for jar in jars:
+                shutil.copy(str(jar), str(temp_path))
+
+            # 3. Create input CoNLL file
             with input_path.open("w", encoding="utf8") as input_file:
                 for sentence in sentences:
                     for i, (word, tag) in enumerate(sentence, start=1):
@@ -102,32 +108,37 @@ class MaltParser(NLTKMaltParser):
                         )
                     input_file.write("\n\n")
 
-            # Command list - all items converted to str
+            # 4. Command execution
             cmd = [
                 "java",
                 "-Xmx512m",
-                "-jar",
-                str(self._malt_bin_path),
-                "-w",
-                str(temp_dir),
-                "-c",
-                str(self._model_base_name),
-                "-i",
-                str(input_path),
-                "-o",
-                str(output_path),
-                "-m",
-                "parse",
+                "-cp", "*",
+                "org.maltparser.Malt",
+                "-w", ".",
+                "-c", str(self._model_base_name),
+                "-i", "malt_input.conll",
+                "-o", "malt_output.conll",
+                "-m", "parse",
             ]
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=str(temp_path),
+            )
             stdout, stderr = process.communicate()
 
             if process.returncode != 0:
-                msg = f"MaltParser execution failed.\nSTDOUT: {stdout}\nSTDERR: {stderr}"
-                raise Exception(msg)
+                msg = f"MaltParser execution failed.\nCMD: {' '.join(cmd)}\nSTDOUT: {stdout}\nSTDERR: {stderr}"
+                raise RuntimeError(msg)
 
-            # Parse results
+            # 5. Parse results
+            if not output_path.exists():
+                 msg = f"MaltParser failed to generate output file.\nSTDERR: {stderr}"
+                 raise RuntimeError(msg)
+
             with output_path.open(encoding="utf8") as output_file:
                 content = output_file.read()
                 for item in content.split("\n\n"):
@@ -135,7 +146,7 @@ class MaltParser(NLTKMaltParser):
                         yield DependencyGraph(item, top_relation_label="root")
 
 
-class SpacyDependencyParser:
+class SpacyDependencyParser(MaltParser):
     """A Dependency Parser based on the Spacy library."""
 
     def __init__(
