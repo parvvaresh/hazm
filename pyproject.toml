@@ -14,7 +14,6 @@ classifiers = [
     "Natural Language :: Persian",
 ]
 
-homepage = "https://roshan-ai.ir/hazm/"
 repository = "https://github.com/roshan-research/hazm/"
 documentation = "https://roshan-ai.ir/hazm/docs/"
 keywords = ["nlp", "persian nlp", "persian"]

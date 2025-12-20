@@ -9,7 +9,7 @@ remote_branch: master
 repo_name: hazm
 
 docs_dir: documentation
-site_dir: docs/docs
+site_dir: docs
 
 copyright: |
 
