@@ -194,3 +194,4 @@ Visit https://roshan-ai.ir/hazm/docs to view the full documentation.
 </a>
 
 [![Star History Chart](https://api.star-history.com/svg?repos=roshan-research/hazm&type=Date)](https://star-history.com/#roshan-research/hazm&Date)
+
