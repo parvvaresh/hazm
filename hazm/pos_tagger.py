@@ -7,7 +7,6 @@ from typing import Any
 
 import spacy
 from nltk.tag import stanford
-from sklearn.metrics import classification_report
 from spacy.tokens import Doc
 from spacy.tokens import DocBin
 from spacy.vocab import Vocab
@@ -515,6 +514,7 @@ class SpacyPOSTagger(POSTagger):
         use_ez_tags: bool,
     ) -> None:
         """Helper function to evaluate tags."""
+        from sklearn.metrics import classification_report
         predictions_cleaned = []
         golds_cleaned = []
 

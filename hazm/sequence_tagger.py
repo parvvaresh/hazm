@@ -6,10 +6,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 from pycrfsuite import Tagger
 from pycrfsuite import Trainer
-from sklearn.metrics import accuracy_score
 
 from hazm.types import ChunkedSentence
 from hazm.types import Sentence
@@ -258,6 +256,7 @@ class SequenceTagger:
         Returns:
             The accuracy of the model.
         """
+        from sklearn.metrics import accuracy_score
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
@@ -399,6 +398,7 @@ class IOBTagger(SequenceTagger):
         Returns:
             The accuracy of the model.
         """
+        from sklearn.metrics import accuracy_score
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
