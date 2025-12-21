@@ -185,13 +185,5 @@ Visit https://roshan-ai.ir/hazm to view the full documentation.
 |                                | SENT Recall     | 99.38   |
 |                                | SENT F-Measure  | 99.11   |
 
-### Code contributores
-
-![Alt](https://repobeats.axiom.co/api/embed/ae42bda158791645d143c3e3c7f19d8a68d06d08.svg "Repobeats analytics image")
-
-<a href="https://github.com/roshan-research/hazm/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=roshan-research/hazm" />
-</a>
-
 [![Star History Chart](https://api.star-history.com/svg?repos=roshan-research/hazm&type=Date)](https://star-history.com/#roshan-research/hazm&Date)
 
