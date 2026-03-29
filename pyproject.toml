@@ -31,7 +31,7 @@ nltk="^3.9.4"
 python-crfsuite="^0.9.12"
 flashtext = "^2.7"
 tqdm = "^4.67.3"
-huggingface-hub = "^0.34.0"
+huggingface-hub = "^1.8.0"
 
 gensim = { version = "^4.4.0", optional = true }
 numpy = { version = "^2.4.4", optional = true }
