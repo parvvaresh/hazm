@@ -256,7 +256,12 @@ class SequenceTagger:
         Returns:
             The accuracy of the model.
         """
-        from sklearn.metrics import accuracy_score
+        try:
+            from sklearn.metrics import accuracy_score
+        except ImportError:
+            msg = "To evaluate the model, please install hazm with: pip install hazm[all]"
+            raise ImportError(msg) from None
+
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)
@@ -398,7 +403,12 @@ class IOBTagger(SequenceTagger):
         Returns:
             The accuracy of the model.
         """
-        from sklearn.metrics import accuracy_score
+        try:
+            from sklearn.metrics import accuracy_score
+        except ImportError:
+            msg = "To evaluate the model, please install hazm with: pip install hazm[all]"
+            raise ImportError(msg) from None
+
         if self.model is None:
             msg = "Model is not loaded."
             raise ValueError(msg)

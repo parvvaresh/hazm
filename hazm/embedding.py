@@ -6,19 +6,33 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import smart_open
-from gensim.models import Doc2Vec
-from gensim.models import FastText
-from gensim.models import KeyedVectors
-from gensim.models.callbacks import CallbackAny2Vec
-from gensim.models.doc2vec import TaggedDocument
-from gensim.models.fasttext import load_facebook_model
-from gensim.scripts.glove2word2vec import glove2word2vec
-from numpy import ndarray
+try:
+    import numpy as np
+    import smart_open
+    from gensim.models import Doc2Vec
+    from gensim.models import FastText
+    from gensim.models import KeyedVectors
+    from gensim.models.callbacks import CallbackAny2Vec
+    from gensim.models.doc2vec import TaggedDocument
+    from gensim.models.fasttext import load_facebook_model
+    from gensim.scripts.glove2word2vec import glove2word2vec
+    from numpy import ndarray
+    EMBEDDINGS_AVAILABLE = True
+
+except ImportError:
+    EMBEDDINGS_AVAILABLE = False
+    CallbackAny2Vec = object
+    Doc2Vec = FastText = KeyedVectors = TaggedDocument = ndarray = Any
 
 from hazm.normalizer import Normalizer
 from hazm.word_tokenizer import word_tokenize
+
+
+def _check_embeddings_deps():
+    if not EMBEDDINGS_AVAILABLE:
+        msg = "To use Embedding, please install hazm with the command: pip install hazm[all]."
+        raise ImportError(msg)
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +51,7 @@ class WordEmbedding:
 
     def __init__(self, model: Any, model_type: str) -> None:
         """Constructor."""
+        _check_embeddings_deps()
         self.model = model
         self.model_type = model_type
 
@@ -59,6 +74,7 @@ class WordEmbedding:
         Returns:
             An instance of WordEmbedding.
         """
+        _check_embeddings_deps()
         final_model_path = model_path
 
         if repo_id and model_filename:
@@ -227,6 +243,7 @@ class SentenceEmbeddingCorpus:
     """Iterate over dataset for Doc2Vec training."""
 
     def __init__(self, data_path: str) -> None:
+        _check_embeddings_deps()
         self.data_path = data_path
 
     def __iter__(self) -> Iterator[TaggedDocument]:
@@ -241,6 +258,7 @@ class CallbackSentEmbedding(CallbackAny2Vec):
     """Callback for Doc2Vec training."""
 
     def __init__(self) -> None:
+        _check_embeddings_deps()
         self.epoch = 0
 
     def on_epoch_end(self, model: Doc2Vec) -> None:
@@ -260,6 +278,7 @@ class SentEmbedding:
 
     def __init__(self, model: Doc2Vec | None = None) -> None:
         """Constructor."""
+        _check_embeddings_deps()
         self.model = model
         self.word_embedding: WordEmbedding | None = None
         if self.model:

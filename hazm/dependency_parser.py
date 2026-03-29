@@ -8,10 +8,16 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import spacy
 from nltk.parse import DependencyGraph
 from nltk.parse.malt import MaltParser as NLTKMaltParser
-from spacy.tokens import Doc
+
+try:
+    import spacy
+    from spacy.tokens import Doc
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = Any
 
 from hazm.types import Sentence
 from hazm.types import TaggedSentence
@@ -159,6 +165,10 @@ class SpacyDependencyParser(MaltParser):
         repo_id: str | None = None,
     ) -> None:
         """Initialize Spacy-based parser."""
+        if not SPACY_AVAILABLE:
+            msg = "To use Spacy-based models, please install hazm: pip install hazm[all]"
+            raise ImportError(msg)
+
         self.tagger = tagger
         self.lemmatize = (
             lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"

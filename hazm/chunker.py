@@ -7,15 +7,22 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-import spacy
 from nltk.chunk import RegexpParser
 from nltk.chunk import conlltags2tree
 from nltk.chunk import tree2conlltags
 from nltk.chunk.util import ChunkScore
 from nltk.tree import Tree
-from spacy.tokens import Doc
-from spacy.tokens import DocBin
-from spacy.vocab import Vocab
+
+try:
+    import spacy
+    from spacy.tokens import Doc
+    from spacy.tokens import DocBin
+    from spacy.vocab import Vocab
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = DocBin = Vocab = Any
+
 from tqdm import tqdm
 
 from hazm.pos_tagger import POSTagger
@@ -295,6 +302,10 @@ class SpacyChunker(Chunker):
             gpu_id: The ID of the GPU to use.
             repo_id: Hugging Face repository ID.
         """
+        if not SPACY_AVAILABLE:
+            msg = "To use Spacy-based models, please install hazm: pip install hazm[all]"
+            raise ImportError(msg)
+
         super().__init__()
         self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu

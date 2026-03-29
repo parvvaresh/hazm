@@ -1,9 +1,16 @@
 import subprocess
+from typing import Any
 
-import spacy
-from spacy.tokens import Doc
-from spacy.tokens import DocBin
-from spacy.vocab import Vocab
+try:
+    import spacy
+    from spacy.tokens import Doc
+    from spacy.tokens import DocBin
+    from spacy.vocab import Vocab
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = DocBin = Vocab = Any
+
 from tqdm import tqdm
 
 
@@ -17,6 +24,10 @@ class HazmNER:
             model_path: The path to the pre-trained NER model.
             use_gpu: Whether to use GPU for processing.
         """
+        if not SPACY_AVAILABLE:
+            msg = "To use NER, please install hazm: pip install hazm[all]"
+            raise ImportError(msg)
+
         self.model_path = model_path
         self.use_gpu = use_gpu
         self.model = self._load_model(model_path, use_gpu)

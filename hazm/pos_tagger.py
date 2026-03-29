@@ -5,11 +5,18 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-import spacy
 from nltk.tag import stanford
-from spacy.tokens import Doc
-from spacy.tokens import DocBin
-from spacy.vocab import Vocab
+
+try:
+    import spacy
+    from spacy.tokens import Doc
+    from spacy.tokens import DocBin
+    from spacy.vocab import Vocab
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = DocBin = Vocab = Any
+
 from tqdm import tqdm
 
 from hazm.api import TaggerProtocol
@@ -264,6 +271,10 @@ class SpacyPOSTagger(POSTagger):
             repo_id: Hugging Face repository ID.
             model_filename: Filename (unused for spaCy models).
         """
+        if not SPACY_AVAILABLE:
+            msg = "To use SpacyPOSTagger, install hazm with the command: pip install hazm[all]"
+            raise ImportError(msg)
+
         super().__init__(universal_tag=True)
         self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu
@@ -514,7 +525,12 @@ class SpacyPOSTagger(POSTagger):
         use_ez_tags: bool,
     ) -> None:
         """Helper function to evaluate tags."""
-        from sklearn.metrics import classification_report
+        try:
+            from sklearn.metrics import classification_report
+        except ImportError:
+            msg = "To evaluate the model, please install hazm with the command: pip install hazm[all]."
+            raise ImportError(msg) from None
+
         predictions_cleaned = []
         golds_cleaned = []
 
