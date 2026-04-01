@@ -63,6 +63,9 @@ def coarse_pos_e(tags: list[str]) -> list[str]:
     except Exception:
         return ""
 
+def _join_tags(tags: list[str]) -> str:
+        """Return fine-grained tags joined by comma."""
+        return ",".join(tags)
 
 class TreebankReader:
     """This class includes functions for reading the Treebank corpus.
@@ -90,7 +93,7 @@ class TreebankReader:
             join_verb_parts: If `True`, joins multi-part verbs using an underscore.
         """
         self._root = root
-        self._pos_map = pos_map if pos_map else lambda tags: ",".join(tags)
+        self._pos_map = pos_map if pos_map else _join_tags
         self._join_clitics = join_clitics
         self._join_verb_parts = join_verb_parts
         self._tokenizer = WordTokenizer()

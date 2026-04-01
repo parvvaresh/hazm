@@ -210,6 +210,10 @@ def join_verb_parts(sentence: list[tuple[str, str]]) -> list[tuple[str, str]]:
             result.append(word)
     return list(reversed(result[1:]))
 
+def _join_tags(tags: list[str], word: str) -> str:  # noqa: ARG001
+        """Return fine-grained tags joined by comma, ignoring the word."""
+        return ",".join(tags)
+
 
 class PeykareReader:
     """A reader for the Peykare corpus.
@@ -238,7 +242,7 @@ class PeykareReader:
         """
         self._root = root
         if pos_map is None:
-            self._pos_map = lambda tags: ",".join(tags)
+            self._pos_map = _join_tags
         elif universal_pos:
             self._pos_map = coarse_pos_u
         else:
