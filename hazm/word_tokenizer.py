@@ -90,6 +90,8 @@ class WordTokenizer(TokenizerI, TokenizerProtocol):
         self.verbs: list[str] = []
         self.bons: set[str] = set()
         self.verbe: set[str] = set()
+        self.before_verbs: set[str] = set()
+        self.after_verbs: set[str] = set()
 
         if join_verb_parts:
             self._init_verb_parts(verbs_file)

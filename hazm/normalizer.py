@@ -366,7 +366,7 @@ class Normalizer(NormalizerProtocol):
             if result:
                 token_pair = result[-1] + "‌" + token
                 if self._words and (
-                    token_pair in self._verbs
+                    (self._verbs and token_pair in self._verbs)
                     or (token_pair in self._words and self._words[token_pair][0] > 0)
                 ):
                     joined = True
