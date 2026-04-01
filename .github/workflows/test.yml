@@ -19,14 +19,14 @@ jobs:
             - name: Checkout master
               uses: actions/checkout@v5
 
+            - name: Install poetry
+              run: pipx install poetry
+
             - name: Install Python ${{ matrix.python-versions }}
               uses: actions/setup-python@v6
               with:
                   python-version: ${{ matrix.python-versions }}
                   cache: 'poetry'
-
-            - name: Install poetry
-              run: curl -sSL https://install.python-poetry.org | python3 -
 
             - name: Install dependencies
               run: |
