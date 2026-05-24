@@ -1,24 +1,20 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای استخراج جملاتِ متن است.
-
-برای استخراج کلمات از تابع [WordTokenizer()][hazm.WordTokenizer] استفاده کنید.
-
-"""
+"""This module contains classes and functions for sentence tokenization."""
 
 
 import re
-from typing import List
 
 from nltk.tokenize.api import TokenizerI
 
 
 class SentenceTokenizer(TokenizerI):
-    """این کلاس شامل توابعی برای استخراج جملاتِ متن است."""
+    """This class includes functions for extracting sentences from text."""
 
     def __init__(self: "SentenceTokenizer") -> None:
+        """Constructor."""
         self.pattern = re.compile(r"([!.?⸮؟]+)[ \n]+")
 
-    def tokenize(self: "SentenceTokenizer", text: str) -> List[str]:
-        """متن ورودی را به جملات سازندهٔ آن می‌شِکند.
+    def tokenize(self: "SentenceTokenizer", text: str) -> list[str]:
+        """Tokenizes the text into sentences.
 
         Examples:
             >>> tokenizer = SentenceTokenizer()
@@ -26,11 +22,10 @@ class SentenceTokenizer(TokenizerI):
             ['جدا کردن ساده است.', 'تقریبا البته!']
 
         Args:
-            text: متنی که باید جملات آن استخراج شود.
+            text: The text to be tokenized.
 
         Returns:
-            فهرست جملات استخراج‌شده.
-
+            A list of sentences.
         """
         text = self.pattern.sub(r"\1\n\n", text)
         return [
@@ -38,3 +33,15 @@ class SentenceTokenizer(TokenizerI):
             for sentence in text.split("\n\n")
             if sentence.strip()
         ]
+
+
+def sent_tokenize(text: str) -> list[str]:
+    """Tokenizes text into sentences.
+
+    Args:
+        text: The text to tokenize.
+
+    Returns:
+        A list of sentences.
+    """
+    return SentenceTokenizer().tokenize(text)

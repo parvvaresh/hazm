@@ -1,58 +1,73 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ [PerUDT](https://github.com/phsfr/UD_Persian-PerDT) است.
-PerUDT حاوی تعداد قابل‌توجهی جملۀ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
+"""This module includes classes and functions for reading the [PerUDT](https://github.com/phsfr/UD_Persian-PerDT) corpus.
+
+PerUDT contains a significant number of labeled sentences with syntactic and
+morphological information.
 """
 import sys
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
-from hazm.corpus_readers import DadeganReader
+from .dadegan_reader import DadeganReader
 
 
 def conllu2conll(conllu_path: str) -> str :
-    """یک فایل conllu را می‌گیرد و بعد از تبدیل به فرمت قدیمی conll آن را به صورت یک رشتهٔ متنی برمی‌گرداند."""
-    reader1 = Path(conllu_path).open(encoding="utf8")
+    """Converts a CoNLL-U file to the old CoNLL format.
 
+    Args:
+        conllu_path: Path to the CoNLL-U file.
+
+    Returns:
+        The content of the file converted to CoNLL format as a string.
+    """
     delex = False
     if len(sys.argv) > 3 and sys.argv[3] == "delex":
         delex = True
 
-    line1 = reader1.readline()
-
     lines = []
-    while line1:
-        if len(line1.strip()) == 0:
-            lines.append(line1)
-        else:
-            spl = line1.strip().split("\t")
-            if len(spl) > 2 and "." not in spl[0] and spl[0].isdigit():
-                if ":" in spl[7]:
-                    spl[7] = spl[7][:spl[7].rfind(":")]
-                if spl[6] == "_" or spl[6] == "-":
-                    spl[6] = "-1"
-                if delex:
-                    spl[1] = "_"
-                    spl[2] = "_"
-                lines.append("\t".join(spl) + "\n")
 
+    with Path(conllu_path).open(encoding="utf8") as reader1:
         line1 = reader1.readline()
+
+        while line1:
+            if len(line1.strip()) == 0:
+                lines.append(line1)
+            else:
+                spl = line1.strip().split("\t")
+                if len(spl) > 2 and "." not in spl[0] and spl[0].isdigit():
+                    if ":" in spl[7]:
+                        spl[7] = spl[7][:spl[7].rfind(":")]
+                    if spl[6] == "_" or spl[6] == "-":
+                        spl[6] = "-1"
+                    if delex:
+                        spl[1] = "_"
+                        spl[2] = "_"
+                    lines.append("\t".join(spl) + "\n")
+
+            line1 = reader1.readline()
+
     return "".join(lines)
 
 class UniversalDadeganReader(DadeganReader):
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ PerUDT است.
+    """This class includes functions for reading the PerUDT corpus.
 
     Args:
-        conllu_file: مسیر فایلِ پیکره.
-
+        conllu_file: Path to the CoNLL-U corpus file.
     """
     def __init__(self: DadeganReader, conllu_file: str) -> None:
+        """Initializes the UniversalDadeganReader.
+
+        Args:
+            conllu_file: Path to the CoNLL-U corpus file.
+        """
         self._conll_file = conllu_file
         self._pos_map = lambda tags, _: ",".join(tags)
+        self._top_relation_label = "root"
 
     def _sentences(self: DadeganReader) -> Iterator[str]:
-        """جملات پیکره را به شکل متن خام برمی‌گرداند.
+        """Yields sentences of the corpus in raw text format.
 
         Yields:
-            جملهٔ بعدی.
+            The next sentence in the corpus.
         """
         text = conllu2conll(self._conll_file)
 
@@ -63,4 +78,3 @@ class UniversalDadeganReader(DadeganReader):
         for item in text.replace(" ", "_").split("\n\n"):
             if item.strip():
                 yield item
-

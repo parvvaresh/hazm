@@ -1,520 +1,377 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای تبدیل کلمه یا متن به برداری از اعداد است."""
+"""This module contains classes and functions for converting words or text into numerical vectors."""
+import logging
 import multiprocessing
-import os
 import warnings
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Type
 
-import fasttext as fstxt
-import numpy as np
-import smart_open
-from gensim.models import Doc2Vec
-from gensim.models import KeyedVectors
-from gensim.models import fasttext
-from gensim.models.callbacks import CallbackAny2Vec
-from gensim.models.doc2vec import TaggedDocument
-from gensim.scripts.glove2word2vec import glove2word2vec
-from gensim.test.utils import datapath
-from numpy import ndarray
+try:
+    import numpy as np
+    import smart_open
+    from gensim.models import Doc2Vec
+    from gensim.models import FastText
+    from gensim.models import KeyedVectors
+    from gensim.models.callbacks import CallbackAny2Vec
+    from gensim.models.doc2vec import TaggedDocument
+    from gensim.models.fasttext import load_facebook_model
+    from gensim.scripts.glove2word2vec import glove2word2vec
+    from numpy import ndarray
+    EMBEDDINGS_AVAILABLE = True
 
-from hazm import Normalizer
-from hazm import word_tokenize
+except ImportError:
+    EMBEDDINGS_AVAILABLE = False
+    CallbackAny2Vec = object
+    Doc2Vec = FastText = KeyedVectors = TaggedDocument = ndarray = Any
 
-supported_embeddings = ["fasttext", "keyedvector", "glove"]
+from hazm.normalizer import Normalizer
+from hazm.word_tokenizer import word_tokenize
+
+
+def _check_embeddings_deps():
+    if not EMBEDDINGS_AVAILABLE:
+        msg = "To use Embedding, please install hazm with the command: pip install hazm[all]."
+        raise ImportError(msg)
+
+
+logger = logging.getLogger(__name__)
+
+SUPPORTED_EMBEDDINGS = ["fasttext", "keyedvector", "glove"]
 
 
 class WordEmbedding:
-    """این کلاس شامل توابعی برای تبدیل کلمه به برداری از اعداد است.
+    """This class includes functions for converting words into numerical vectors.
 
-    Args:
-        model_type: نوع امبدینگ که می‌تواند یکی از مقادیر ‍`fasttext`, `keyedvector`, `glove` باشد.
-        model_path: مسیر فایل امبدینگ.
-
+    Examples:
+        >>> # Load from Hugging Face Hub
+        >>> wordEmbedding = WordEmbedding.load(repo_id='roshan-research/hazm-word-embedding', model_filename='fasttext_skipgram_300.bin', model_type='fasttext')
+        >>> # Or load from a local model file
+        >>> # wordEmbedding = WordEmbedding.load(model_path='fasttext_skipgram_300.bin', model_type='fasttext')
     """
 
-    def __init__(
-        self: "WordEmbedding",
-        model_type: str,
-        model_path: Optional[str] = None,
-    ) -> None:
-        if model_type not in supported_embeddings:
-            msg = (
-                f'Model type "{model_type}" is not supported! Please choose from'
-                f" {supported_embeddings}"
-            )
-            raise KeyError(
-                msg,
-            )
+    def __init__(self, model: Any, model_type: str) -> None:
+        """Constructor."""
+        _check_embeddings_deps()
+        self.model = model
         self.model_type = model_type
-        if model_path:
-            self.load_model(model_path)
 
-    def load_model(self: "WordEmbedding", model_path: str) -> None:
-        """فایل امبدینگ را بارگزاری می‌کند.
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin') # doctest: +ELLIPSIS
-            ...
+    @classmethod
+    def load(
+        cls,
+        model_path: str | Path | None = None,
+        model_type: str = "fasttext",
+        repo_id: str | None = None,
+        model_filename: str | None = None,
+    ) -> "WordEmbedding":
+        """Factory method to load the model.
 
         Args:
-            model_path: مسیر فایل امبدینگ.
+            model_path: Path to the model file.
+            model_type: Type of the model ('fasttext', 'keyedvector', or 'glove').
+            repo_id: Hugging Face repository ID.
+            model_filename: Filename in the Hugging Face repository.
 
+        Returns:
+            An instance of WordEmbedding.
         """
-        if self.model_type == "fasttext":
-            self.model = fasttext.load_facebook_model(model_path).wv
-        elif self.model_type == "keyedvector":
-            if model_path.endswith("bin"):
-                self.model = KeyedVectors.load_word2vec_format(model_path, binary=True)
-            else:
-                self.model = KeyedVectors.load_word2vec_format(model_path)
-        elif self.model_type == "glove":
-            word2vec_addr = str(model_path) + "_word2vec_format.vec"
-            if not Path.exists(word2vec_addr):
-                _ = glove2word2vec(model_path, word2vec_addr)
-            self.model = KeyedVectors.load_word2vec_format(word2vec_addr)
-            self.model_type = "keyedvector"
-        else:
-            msg = (
-                f"{self.model_type} not supported! Please choose from"
-                f" {supported_embeddings}"
-            )
-            raise KeyError(
-                msg,
-            )
+        _check_embeddings_deps()
+        final_model_path = model_path
+
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import hf_hub_download
+                from huggingface_hub import snapshot_download
+
+                if model_type == "fasttext":
+                     final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+                else:
+                     cache_dir = snapshot_download(repo_id=repo_id)
+                     final_model_path = Path(cache_dir) / model_filename
+
+            except ImportError as e:
+                msg = f"Failed to import huggingface-hub: {e}"
+                raise ImportError(msg) from e
+            except Exception as e:
+                msg = f"Failed to download from {repo_id}: {e}"
+                raise ValueError(msg) from e
+
+        if not final_model_path:
+             msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+             raise ValueError(msg)
+
+        if model_type not in SUPPORTED_EMBEDDINGS:
+            msg = f'Model type "{model_type}" is not supported! Choose from {SUPPORTED_EMBEDDINGS}'
+            raise KeyError(msg)
+
+        final_model_path = str(final_model_path)
+        model = None
+
+        if model_type == "fasttext":
+            try:
+                model = load_facebook_model(final_model_path).wv
+            except Exception:
+                model = FastText.load(final_model_path).wv
+
+        elif model_type == "keyedvector":
+            binary = final_model_path.endswith("bin")
+            model = KeyedVectors.load_word2vec_format(final_model_path, binary=binary)
+
+        elif model_type == "glove":
+            word2vec_addr = str(final_model_path) + "_word2vec_format.vec"
+            if not Path(word2vec_addr).exists():
+                logger.info("Converting Glove to Word2Vec format...")
+                glove2word2vec(final_model_path, word2vec_addr)
+            model = KeyedVectors.load_word2vec_format(word2vec_addr)
+            model_type = "keyedvector"
+
+        return cls(model, model_type)
 
     def train(
-        self: "WordEmbedding",
+        self,
         dataset_path: str,
-        workers: int = multiprocessing.cpu_count() - 1,  # noqa: B008
+        workers: int = multiprocessing.cpu_count() - 1,
         vector_size: int = 200,
         epochs: int = 10,
         min_count: int = 5,
         fasttext_type: str = "skipgram",
-        dest_path: str = "fasttext_word2vec_model.bin",
+        dest_path: str = "fasttext_word2vec_model.model",
     ) -> None:
-        """یک فایل امبدینگ از نوع fasttext ترین می‌کند.
+        """Trains the model using Gensim FastText.
 
         Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.train(dataset_path = 'dataset.txt', workers = 4, vector_size = 300, epochs = 30, fasttext_type = 'cbow', dest_path = 'fasttext_model') # doctest: +ELLIPSIS
-            ...
-
-        Args:
-            dataset_path: مسیر فایل متنی.
-            workers: تعداد هسته درگیر برای ترین مدل.
-            vector_size: طول وکتور خروجی به ازای هر کلمه.
-            epochs: تعداد تکرار ترین بر روی کل دیتا.
-            min_count:  حداقل تعداد تکرار یک کلمه برای قرارگیری آن در مدل امبدینگ.
-            fasttext_type: نوع fasttext مورد نظر برای ترین که میتواند یکی از مقادیر skipgram یا cbow را داشته باشد.
-            dest_path: مسیر مورد نظر برای ذخیره فایل امبدینگ.
-
+            >>> wordEmbedding.train(dataset_path='dataset.txt', workers=4, vector_size=300, epochs=30, fasttext_type='cbow')
         """
-        if self.model_type != "fasttext":
-            self.model = "fasttext"
-            warnings.warn(
-                (
-                    "this function is for training fasttext models only and"
-                    f" {self.model_type} is not supported"
-                ),
-                stacklevel=2,
-            )
+        sg = 1 if fasttext_type == "skipgram" else 0
+        workers = max(1, workers)
+        corpus = SentenceEmbeddingCorpus(dataset_path)
+        sentences = (doc.words for doc in corpus)
 
-        fasttext_model_types = ["cbow", "skipgram"]
-        if fasttext_type not in fasttext_model_types:
-            msg = (
-                f'Model type "{fasttext_type}" is not supported! Please choose from'
-                f" {fasttext_model_types}"
-            )
-            raise KeyError(
-                msg,
-            )
-
-        workers = 1 if workers == 0 else workers
-
-        print("training model...")
-        model = fstxt.train_unsupervised(
-            dataset_path,
-            model=fasttext_type,
-            dim=vector_size,
-            epoch=epochs,
-            thread=workers,
-            min_count = min_count,
+        model = FastText(
+            vector_size=vector_size,
+            window=5,
+            min_count=min_count,
+            workers=workers,
+            sg=sg,
+            epochs=epochs,
         )
 
-        print("Model trained.")
+        model.build_vocab(corpus_iterable=sentences)
+        model.train(corpus_iterable=sentences, total_examples=model.corpus_count, epochs=epochs)
+        model.save(dest_path)
+        self.model = model.wv
 
-        print("saving model...")
-        model.save_model(dest_path)
-        print("Model saved.")
-
-        print("loading model...")
-        self.load_model(model_path=dest_path)
-        print("model loaded.")
-
-    def __getitem__(self: "WordEmbedding", word: str) -> Type[ndarray]:
-        """__getitem__."""
-        if not self.model:
-            msg = "Model must not be None! Please load model first."
-            raise AttributeError(msg)
-        return self.model[word]
-
-    def doesnt_match(self: "WordEmbedding", words: List[str]) -> str:
-        """لیستی از کلمات را دریافت می‌کند و کلمهٔ نامرتبط را برمی‌گرداند.
+    def doesnt_match(self, words: list[str]) -> str:
+        """Finds the word that does not match the others in the list.
 
         Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin')
-            >>> wordEmbedding.doesnt_match(['سلام' ,'درود' ,'خداحافظ' ,'پنجره'])
+            >>> wordEmbedding.doesnt_match(['سلام', 'درود', 'خداحافظ', 'پنجره'])
             'پنجره'
-            >>> wordEmbedding.doesnt_match(['ساعت' ,'پلنگ' ,'شیر'])
-            'ساعت'
-
-        Args:
-            words: لیست کلمات.
-
-        Returns:
-            کلمهٔ نامرتبط.
-
         """
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
         return self.model.doesnt_match(words)
 
-    def similarity(self: "WordEmbedding", word1: str, word2: str) -> float:
-        """میزان شباهت دو کلمه را برمی‌گرداند.
+    def similarity(self, word1: str, word2: str) -> float:
+        """Calculates the similarity between two words.
 
         Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin')
             >>> wordEmbedding.similarity('ایران', 'آلمان')
             0.72231203
-            >>> wordEmbedding.similarity('ایران', 'پنجره')
-            0.04535884
-
-        Args:
-            word1: کلمهٔ اول
-            word2: کلمهٔ دوم
-
-        Returns:
-            میزان شباهت دو کلمه.
-
         """
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
+        return float(self.model.similarity(word1, word2))
 
-        return float(str(self.model.similarity(word1, word2)))
-
-    def nearest_words(
-        self: "WordEmbedding",
-        word: str,
-        topn: int = 5,
-    ) -> List[Tuple[str, str]]:
-        """کلمات مرتبط با یک واژه را به همراه میزان ارتباط آن برمی‌گرداند.
+    def nearest_words(self, word: str, topn: int = 5) -> list[tuple[str, float]]:
+        """Finds the nearest words to the given word.
 
         Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin')
-            >>> wordEmbedding.nearest_words('ایران', topn = 5)
-            [('ایران،', 0.8742443919181824), ('کشور', 0.8735059499740601), ('کشورمان', 0.8443885445594788), ('ایران\u200cبه', 0.8271722197532654), ('خاورمیانه', 0.8266966342926025)]
-
-
-        Args:
-                word: کلمه‌ای که می‌خواهید واژگان مرتبط با آن را بدانید.
-                topn: تعداد کلمات مرتبطی که می‌خواهید برگردانده شود.
-
-        Returns:
-            لیستی از تاپل‌های [`کلمهٔ مرتبط`, `میزان ارتباط`].
-
+            >>> wordEmbedding.nearest_words('ایران', topn=5)
+            [('کشور', 0.8735059499740601), ...]
         """
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
         return self.model.most_similar(word, topn=topn)
 
-    def get_normal_vector(self: "WordEmbedding", word: str) -> Type[ndarray]:
-        """بردار امبدینگ نرمالایزشدهٔ کلمه ورودی را برمی‌گرداند.
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin')
-            >>> result = wordEmbedding.get_normal_vector('سرباز')
-            >>> isinstance(result, ndarray)
-            True
-
-        Args:
-            word: کلمه‌ای که می‌خواهید بردار متناظر با آن را بدانید.
-
-        Returns:
-            لیست بردار نرمالایزشدهٔ مرتبط با کلمهٔ ورودی.
-
-        """
+    def get_normal_vector(self, word: str) -> ndarray:
+        """Returns the normalized vector for the given word."""
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
-
         return self.model.get_vector(word=word, norm=True)
 
-    def get_vocabs(self: "WordEmbedding") -> List[str]:
-        """لیستی از کلمات موجود در فایل امبدینگ را برمی‌گرداند.
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin')
-            >>> wordEmbedding.get_vocabs() # doctest: +ELLIPSIS
-            ['و', '.', 'در', '،', ...]
-
-        Returns:
-            لیست کلمات موجود در فایل امبدینگ.
-
-        """
+    def get_vocabs(self) -> list[str]:
+        """Returns the list of vocabulary words."""
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
         return self.model.index_to_key
 
-    def get_vocab_to_index(self: "WordEmbedding") -> dict:
-        """دیکشنری برمی‌گرداند که هر کلمه موجود در فایل امبدینگ را به ایندکس آن کلمه در لیست بردارها مپ می‌کند.
-
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('word2vec.bin)
-            >>> vocab_to_index = wordEmbedding.get_vocab_to_index()
-            >>> index = vocab_to_index['سلام']
-            >>> vocabs = wordEmbedding.get_vocabs()
-            >>> vocabs[index]
-            'سلام'
-
-        Returns:
-            دیکشنری که هر کلمه را به ایندکس آن مپ می‌کند.
-        """
+    def get_vocab_to_index(self) -> dict[str, int]:
+        """Returns a dictionary mapping words to their indices."""
+        if not self.model:
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.key_to_index
 
-    def get_vectors(self: "WordEmbedding") -> Type[ndarray]:
-        """وکتورهای توصیف کننده کلمات را برمیگرداند.(عناصر این وکتور با وکتور کلمات تابع  get_vocabs هم‌اندیس هستند.
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('resorces/word2vec.bin')
-            >>> vectors = wordEmbedding.get_vectors()
-            >>> all(vectors[wordEmbedding.get_vocab_to_index()['سلام']] == wordEmbedding['سلام'])
-            True
-
-        Returns:
-            تمامی وکتور بیان‌کننده کلمات.
-        """
+    def get_vectors(self) -> ndarray:
+        """Returns the matrix of word vectors."""
+        if not self.model:
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vectors
 
-    def get_vector_size(self: "WordEmbedding") -> int:
-        """طول وکتور بیان‌کننده هر کلمه در مدل را برمی‌گرداند.
-
-        Examples:
-            >>> wordEmbedding = WordEmbedding(model_type = 'fasttext')
-            >>> wordEmbedding.load_model('resorces/word2vec.bin')
-            >>> wordEmbedding.get_vector_size()
-            300
-
-
-        Returns:
-            طول وکتور بیان‌کننده کلمات.
-
-        """
+    def get_vector_size(self) -> int:
+        """Returns the size of the word vectors."""
+        if not self.model:
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size
+
+    def __getitem__(self, word: str) -> ndarray:
+        """Returns the vector for the given word."""
+        if not self.model:
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
+        return self.model[word]
 
 
 class SentenceEmbeddingCorpus:
-    """SentenceEmbeddingCorpus."""
+    """Iterate over dataset for Doc2Vec training."""
 
-    def __init__(self: "SentenceEmbeddingCorpus", data_path: str) -> None:
-        """__init__."""
+    def __init__(self, data_path: str) -> None:
+        _check_embeddings_deps()
         self.data_path = data_path
 
-    def __iter__(self: "SentenceEmbeddingCorpus") -> Iterator[TaggedDocument]:
-        """__iter__."""
-        for i, list_of_words in enumerate(smart_open.open(self.data_path)):
+    def __iter__(self) -> Iterator[TaggedDocument]:
+        for i, list_of_words in enumerate(smart_open.open(self.data_path, encoding="utf-8")):
             yield TaggedDocument(
                 word_tokenize(Normalizer().normalize(list_of_words)),
                 [i],
             )
 
+
 class CallbackSentEmbedding(CallbackAny2Vec):
-    def __init__(self: "CallbackSentEmbedding") -> None:
+    """Callback for Doc2Vec training."""
+
+    def __init__(self) -> None:
+        _check_embeddings_deps()
         self.epoch = 0
 
-    def on_epoch_end(self: "CallbackSentEmbedding", model: Doc2Vec):
-        print(f"Epoch {self.epoch+1} of {model.epochs}...")
+    def on_epoch_end(self, model: Doc2Vec) -> None:
+        logger.info("Epoch %d of %d...", self.epoch+1, model.epochs)
         self.epoch += 1
 
 
 class SentEmbedding:
-    """این کلاس شامل توابعی برای تبدیل جمله به برداری از اعداد است.
+    """Converts sentences to vectors.
 
-    Args:
-        model_path: مسیر فایل امبدینگ.
-
+    Examples:
+        >>> # Load from Hugging Face Hub
+        >>> sentEmbedding = SentEmbedding.load(repo_id='roshan-research/hazm-sent-embedding', model_filename='sent2vec-naab.model')
+        >>> # Or load from a local model file
+        >>> # sentEmbedding = SentEmbedding.load(model_path='sent2vec-naab.model')
     """
 
-    def __init__(self: "SentEmbedding", model_path: Optional[str] = None) -> None:
-        if model_path:
-            self.load_model(model_path)
-            self.__load_word_embedding_model()
+    def __init__(self, model: Doc2Vec | None = None) -> None:
+        """Constructor."""
+        _check_embeddings_deps()
+        self.model = model
+        self.word_embedding: WordEmbedding | None = None
+        if self.model:
+            self._update_word_embedding()
 
-    def __load_word_embedding_model(self: "SentEmbedding") -> None:
-        self.word_embedding = WordEmbedding(model_type="keyedvector")
-        self.word_embedding.model = self.model.wv
+    def _update_word_embedding(self) -> None:
+        if self.model:
+            self.word_embedding = WordEmbedding(self.model.wv, "keyedvector")
 
-    def load_model(self: "SentEmbedding", model_path: str) -> None:
-        """فایل امبدینگ را بارگذاری می‌کند.
-
-        Examples:
-            >>> sentEmbedding = SentEmbedding()
-            >>> sentEmbedding.load_model('sent2vec.model') # doctest: +ELLIPSIS
-            ...
+    @classmethod
+    def load(
+        cls,
+        model_path: str | Path | None = None,
+        repo_id: str | None = None,
+        model_filename: str | None = None,
+    ) -> "SentEmbedding":
+        """Factory method to load the model.
 
         Args:
-            model_path: مسیر فایل امبدینگ.
+            model_path: Path to the model file.
+            repo_id: Hugging Face repository ID.
+            model_filename: Filename in the Hugging Face repository.
 
+        Returns:
+            An instance of SentEmbedding.
         """
-        self.model = Doc2Vec.load(model_path)
-        self.__load_word_embedding_model()
+        final_model_path = model_path
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import snapshot_download
+                cache_dir = snapshot_download(repo_id=repo_id)
+                final_model_path = Path(cache_dir) / model_filename
+            except Exception as e:
+                msg = f"Failed to import huggingface-hub: {e}"
+                raise ValueError(msg) from e
+
+        if not final_model_path:
+            msg = "Either 'model_path' or 'repo_id' + 'model_filename' must be provided."
+            raise ValueError(msg)
+
+        model = Doc2Vec.load(str(final_model_path))
+        return cls(model)
 
     def train(
-        self: "SentEmbedding",
+        self,
         dataset_path: str,
         min_count: int = 5,
-        workers: int = multiprocessing.cpu_count() - 1,  # noqa: B008
+        workers: int = multiprocessing.cpu_count() - 1,
         windows: int = 5,
         vector_size: int = 300,
         epochs: int = 10,
         dest_path: str = "gensim_sent2vec.model",
     ) -> None:
-        """یک فایل امبدینگ doc2vec ترین می‌کند.
-
-        Examples:
-            >>> sentEmbedding = SentEmbedding()
-            >>> sentEmbedding.train(dataset_path = 'dataset.txt', min_count = 10, workers = 6, windows = 3, vector_size = 250, epochs = 35, dest_path = 'doc2vec_model') # doctest: +ELLIPSIS
-            ...
-
-        Args:
-            dataset_path: مسیر فایل متنی.
-            min_count: حداقل تعداد تکرار یک کلمه برای قرارگیری آن در مدل امبدینگ.
-            workers: تعداد هسته درگیر برای ترین مدل.
-            windows: طول پنجره برای لحاظ کلمات اطراف یک کلمه در ترین آن.
-            vector_size: طول وکتور خروجی به ازای هر جمله.
-            epochs: تعداد تکرار ترین بر روی کل دیتا.
-            dest_path: مسیر مورد نظر برای ذخیره فایل امبدینگ.
-
-        """
-        workers = 1 if workers == 0 else workers
-
+        """Trains the model using Gensim Doc2Vec."""
+        workers = max(1, workers)
         doc = SentenceEmbeddingCorpus(dataset_path)
-
-        model = Doc2Vec(
-            min_count=min_count,
-            window=windows,
-            vector_size=vector_size,
-            workers=workers,
-        )
-        print("building vocab...")
+        model = Doc2Vec(min_count=min_count, window=windows, vector_size=vector_size, workers=workers)
         model.build_vocab(doc)
-        print("training model...")
-        callbacks = [CallbackSentEmbedding()]
-        model.train(doc, total_examples=model.corpus_count, epochs=epochs, callbacks=callbacks)
-
+        model.train(doc, total_examples=model.corpus_count, epochs=epochs, callbacks=[CallbackSentEmbedding()])
         model.dv.vectors = np.array([[]])
         self.model = model
-        self.__load_word_embedding_model()
-        print("Model trained.")
-
-        print("saving model...")
+        self._update_word_embedding()
         model.save(dest_path)
-        print("Model saved.")
 
-    def __getitem__(self: "SentEmbedding", sent: str) -> Type[ndarray]:
-        """__getitem__."""
-        if not self.model:
-            msg = "Model must not be None! Please load model first."
-            raise AttributeError(msg)
-        return self.get_sentence_vector(sent)
-
-    def get_sentence_vector(self: "SentEmbedding", sent: str) -> ndarray:
-        """جمله‌ای را دریافت می‌کند و بردار امبدینگ متناظر با آن را برمی‌گرداند.
+    def get_sentence_vector(self, sent: str) -> ndarray:
+        """Returns the vector for the given sentence.
 
         Examples:
-            >>> sentEmbedding = SentEmbedding()
-            >>> sentEmbedding.load_model("sent2vec.model")
-            >>> result = sentEmbedding.get_sentence_vector('این متن به برداری متناظر با خودش تبدیل خواهد شد')
-            >>> isinstance(result, ndarray)
-            True
-
-        Args:
-            sent: جمله‌ای که می‌خواهید بردار امبیدنگ آن را دریافت کنید.
-
-        Returns:
-            لیست بردار مرتبط با جملهٔ ورودی.
-
+            >>> result = sentEmbedding.get_sentence_vector('این متن به برداری تبدیل خواهد شد')
         """
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
-
         tokenized_sent = word_tokenize(sent)
         return self.model.infer_vector(tokenized_sent)
 
-    def similarity(self: "SentEmbedding", sent1: str, sent2: str) -> float:
-        """میزان شباهت دو جمله را برمی‌گرداند.
+    def similarity(self, sent1: str, sent2: str) -> float:
+        """Calculates the similarity between two sentences.
 
         Examples:
-            >>> sentEmbedding = SentEmbedding()
-            >>> sentEmbedding.load_model("sent2vec.model")
             >>> result = sentEmbedding.similarity('شیر حیوانی وحشی است', 'پلنگ از دیگر جانوران درنده است')
-            >>> isinstance(result, float)
-            True
-            >>> result = sentEmbedding.similarity('هضم یک محصول پردازش متن فارسی است', 'شیر حیوانی وحشی است')
-            >>> isinstance(result, float)
-            True
-
-        Args:
-            sent1: جملهٔ اول.
-            sent2: جملهٔ دوم.
-
-        Returns:
-            میزان شباهت دو جمله که عددی بین `0` و`1` است.
-
         """
         if not self.model:
-            msg = "Model must not be None! Please load model first."
+            msg = "Model must be loaded first."
             raise AttributeError(msg)
+        return float(self.model.similarity_unseen_docs(word_tokenize(sent1), word_tokenize(sent2)))
 
-        return float(
-            str(
-                self.model.similarity_unseen_docs(
-                    word_tokenize(sent1),
-                    word_tokenize(sent2),
-                ),
-            ),
-        )
-
-    def get_vector_size(self: "WordEmbedding") -> int:
-        """طول وکتور بیان‌کننده هر جمله در مدل را برمی‌گرداند.
-
-        Examples:
-            >>> sentEmbedding = SentEmbedding()
-            >>> sentEmbedding.load_model("sent2vec.model")
-            >>> sentEmbedding.get_vector_size()
-            300
-
-
-        Returns:
-            طول وکتور بیان‌کننده جملات.
-
-        """
+    def get_vector_size(self) -> int:
+        """Returns the size of the sentence vectors."""
+        if not self.model:
+            msg = "Model must be loaded first."
+            raise AttributeError(msg)
         return self.model.vector_size
+
+    def __getitem__(self, sent: str) -> ndarray:
+        return self.get_sentence_vector(sent)

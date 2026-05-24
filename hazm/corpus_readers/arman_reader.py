@@ -1,28 +1,34 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ آرمان است.
+"""This module includes classes and functions for reading the Arman corpus.
 
-[پیکرهٔ آرمان](https://github.com/HaniehP/PersianNER) یک پیکره برای موجودیت‌های نامدار است که شامل ۲۵۰,۰۱۵ توکنِ برچسب‌خورده در قالب ۷۶۸۲ جمله است که با فرمت IOB ذخیره شده است.
+The [Arman corpus](https://github.com/HaniehP/PersianNER) is a Named Entity
+Recognition (NER) corpus containing 250,015 tagged tokens in 7,682 sentences,
+stored in IOB format.
 """
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
 
 class ArmanReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ آرمان است.
+    """This class includes methods for reading the Arman corpus.
 
     Args:
-        corpus_folder: مسیر فولدرِ حاوی فایل‌های پیکره.
-        subset: نوع دیتاست: `test` یا `train`
+        corpus_folder: Path to the folder containing the corpus files.
+        subset: The dataset subset: 'test' or 'train'.
     """
     def __init__(self: "ArmanReader", corpus_folder: str, subset: str="train") -> None:
+        """Initializes the ArmanReader with the corpus folder and subset.
+
+        Args:
+            corpus_folder: Path to the folder containing the corpus files.
+            subset: The dataset subset: 'test' or 'train'. Defaults to 'train'.
+        """
         self._corpus_folder = corpus_folder
         self._file_paths = Path(corpus_folder).glob(f"{subset}*.txt")
 
 
-    def sents(self: "ArmanReader") -> Iterator[List[Tuple[str,str]]]:
-        """جملات را یک‌به‌یک در قالب لیستی از `(توکن، برچسب)`ها برمی‌گرداند.
+    def sents(self: "ArmanReader") -> Iterator[list[tuple[str,str]]]:
+        """Yields sentences one by one as a list of (token, tag) tuples.
 
         Examples:
             >>> arman = ArmanReader("arman")
@@ -30,8 +36,7 @@ class ArmanReader:
             [('همین', 'O'), ('فکر', 'O'), ('،', 'O'), ('این', 'O'), ('احساس', 'O'), ('را', 'O'), ('به', 'O'), ('من', 'O'), ('می‌داد', 'O'), ('که', 'O'), ('آزاد', 'O'), ('هستم', 'O'), ('.', 'O')]
 
         Yields:
-            جملهٔ بعدی در قالب لیستی از `(توکن، برچسب)`ها
-
+            The next sentence as a list of (token, tag) tuples.
         """
         for file_path in self._file_paths:
             with Path(file_path).open("r", encoding="utf-8") as file:

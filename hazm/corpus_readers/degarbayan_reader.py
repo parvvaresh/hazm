@@ -1,40 +1,33 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ دِگَربیان است.
+"""This module includes classes and functions for reading the Degarbayan corpus.
 
-[پیکرهٔ
-دگربیان](https://www.peykaregan.ir/dataset/%D9%BE%DB%8C%DA%A9%D8%B1%D9%87-
-%D8%AF%DA%AF%D8%B1%D8%A8%DB%8C%D8%A7%D9%86) حاوی
-۱۵۲۳ نمونه است که به عنوان نمونه‌های دگربیان نشانه‌گذاری شده‌اند. جملات و
-عبارات
-دگربیان، بیانی متفاوت از مفهومی یکسان هستند. داده‌های این پیکره از خبرگزاری‌ها
-جمع‌آورده شده و در سه دسته‌بندی «دگربیان»، «تقریباً دگربیان» و «نامرتبط» ارائه
-می‌شوند. این داده‌ها با استفاده از همکاری جمعی در پیام‌رسان تلگرام نشانه‌گذاری
-شده است.
-
+The [Degarbayan corpus](https://www.peykaregan.ir/dataset/%D9%BE%DB%8C%DA%A9%D8%B1%D9%87-%D8%AF%DA%AF%D8%B1%D8%A8%DB%8C%D8%A7%D9%86)
+contains 1,523 instances labeled as paraphrases. Paraphrase sentences and
+phrases are different expressions of the same concept. Data in this corpus is
+collected from news agencies and presented in three categories: 'Paraphrase',
+'Semi-Paraphrase', and 'Not Paraphrase'. This data was tagged using
+crowdsourcing on Telegram.
 """
 
 
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import Tuple
 from xml.dom import minidom
 
 
 class DegarbayanReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ دگربیان است.
+    """This class includes methods for reading the Degarbayan corpus.
 
     Args:
-        root: مسیر فولدر حاوی فایل‌های پیکره
-        corpus_file: فایل اطلاعات پیکره.
-            در صورتی که بخواهید از حالت استاندارد پیکره استفاده کنید نیازی به تغییرِ این فایل نیست.
-        judge_type: این پارامتر دارای دو مقدار `three_class` و `two_class` است.
-            در حالت `three_class` جملات سه برچسب می‌خورند: ۱. `Paraphrase`(دگربیان)
-            ۲. `SemiParaphrase`(تقریباً دگربیان) ۳. `NotParaphrase`(غیر دگربیان). در حالت
-            `two_class` حالت دوم یعنی `SemiParaphrase` هم برچسب `Paraphrase` می‌خورَد.
-
+        root: Path to the folder containing the corpus files.
+        corpus_file: The corpus information file. No need to change this if
+            using the standard version.
+        judge_type: Determines the labeling scheme. Can be 'three_class' or
+            'two_class'. In 'three_class', labels are 'Paraphrase',
+            'SemiParaphrase', and 'NotParaphrase'. In 'two_class',
+            'SemiParaphrase' is also labeled as 'Paraphrase'.
     """
 
     def __init__(
@@ -43,21 +36,36 @@ class DegarbayanReader:
         corpus_file: str = "corpus_pair.xml",
         judge_type: str = "three_class",
     ) -> None:
+        """Initializes the DegarbayanReader with the root folder and settings.
+
+        Args:
+            root: Path to the folder containing the corpus files.
+            corpus_file: The corpus data file. Defaults to 'corpus_pair.xml'.
+            judge_type: The classification mode ('three_class' or 'two_class').
+                Defaults to 'three_class'.
+        """
         self._root = root
         self._corpus_file = corpus_file
         self._judge_type = judge_type
-        if judge_type != "three_class" and judge_type != "two_class":
+        if judge_type not in {"three_class", "two_class"}:
             self._judge_type = "three_class"
 
-    def docs(self: "DegarbayanReader") -> Iterator[Dict[str, Any]]:
-        """اسناد موجود در پیکره را برمی‌گرداند.
+    def docs(self: "DegarbayanReader") -> Iterator[dict[str, Any]]:
+        """Returns the documents available in the corpus.
 
         Yields:
-            سند بعدی.
-
+            The next document as a dictionary containing pair information.
         """
 
         def judge_number_to_text(judge: str) -> str:
+            """Converts numeric judge labels to their corresponding text representation.
+
+            Args:
+                judge: The numeric judge label as a string.
+
+            Returns:
+                The textual representation of the label based on `judge_type`.
+            """
             if judge == "1" or (self._judge_type == "two_class" and judge == "0"):
                 return "Paraphrase"
 
@@ -127,8 +135,8 @@ class DegarbayanReader:
             msg = "error in reading file"
             raise FileNotFoundError(msg, filename)
 
-    def pairs(self: "DegarbayanReader") -> Iterator[Tuple[str, str, str]]:
-        """متن‌های دگربیان را در قالب یک `(متن اصلی، شکل دگربیان، برچسب)` برمی‌گرداند.
+    def pairs(self: "DegarbayanReader") -> Iterator[tuple[str, str, str]]:
+        """Returns paraphrase pairs in the form of (original_text, paraphrase_text, label).
 
         Examples:
             >>> degarbayan = DegarbayanReader(root='degarbayan')
@@ -136,8 +144,7 @@ class DegarbayanReader:
             ('24 نفر نهایی تیم ملی بدون تغییری خاص معرفی شد', 'کی روش 24 بازیکن را به تیم ملی فوتبال دعوت کرد', 'Paraphrase')
 
         Yields:
-            `متن دگربیان بعدی در قالب یک `(متن اصلی، شکل دگربیان، برچسب).
-
+            The next paraphrase pair as a tuple of (sentence1, sentence2, judge).
         """
         for pair in self.docs():
             yield pair["sentence1"], pair["sentence2"], pair["judge"]

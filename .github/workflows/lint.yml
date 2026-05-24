@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
         - name: Checkout master
-          uses: actions/checkout@v3
+          uses: actions/checkout@v5
           
         - name: Get changed files
           id: changed-files
-          uses: tj-actions/changed-files@v41
+          uses: tj-actions/changed-files@v47
           with:
             files: |
               **/*.py
@@ -28,7 +28,7 @@ jobs:
           run: ruff check ${{ steps.changed-files.outputs.all_changed_files }}
           
         - name: Push back changes
-          uses: stefanzweifel/git-auto-commit-action@v4
+          uses: stefanzweifel/git-auto-commit-action@v7
           with:
             commit_message: "fix auto-fixable linting errors"
             commit_user_name: "linter-bot"

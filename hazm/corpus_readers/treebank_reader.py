@@ -1,39 +1,35 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ تری‌بانک است.
+"""This module includes classes and functions for reading the Treebank corpus.
 
-پیکرهٔ تری‌بانک حاوی هزاران جملهٔ برچسب‌خورده با اطلاعات نحوی و ساخت‌واژی است.
-
+The Treebank corpus contains thousands of tagged sentences with syntactic and
+morphological information.
 """
 
 
 import os
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Tuple
 from xml.dom import minidom
 from xml.dom.minidom import Node
 
 from nltk.tree import Tree
 
-from hazm import WordTokenizer
+from ..word_tokenizer import WordTokenizer
 
 
-def coarse_pos_e(tags: List[str]) -> List[str]:
-    """برچسب‌های ریز را به برچسب‌های درشت (coarse-grained pos tags) تبدیل می‌کند.
+def coarse_pos_e(tags: list[str]) -> list[str]:
+    """Converts fine-grained POS tags to coarse-grained POS tags.
 
     Examples:
         >>> coarse_pos_e(['Nasp---', 'pers', 'prop'])
         'N'
 
     Args:
-        tags: لیست برچسب‌های ریز.
+        tags: A list of fine-grained POS tags.
 
     Returns:
-        لیست برچسب‌های درشت.
-
+        The corresponding coarse-grained POS tag string.
     """
     mapping = {
         "N": "N",
@@ -67,16 +63,18 @@ def coarse_pos_e(tags: List[str]) -> List[str]:
     except Exception:
         return ""
 
+def _join_tags(tags: list[str]) -> str:
+        """Return fine-grained tags joined by comma."""
+        return ",".join(tags)
 
 class TreebankReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ تری‌بانک است.
+    """This class includes functions for reading the Treebank corpus.
 
     Args:
-        root: مسیر فولدر حاوی فایل‌های پیکره
-        pos_map: دیکشنری مبدل برچسب‌های ریز به درشت.
-        join_clitics: اگر `True‍` باشد واژه‌بست‌ها را به کلمهٔ مادر می‌چسباند.
-        join_verb_parts: اگر `True` باشد افعال چندبخشی را با _ به هم می‌چسباند.
-
+        root: Path to the folder containing corpus files.
+        pos_map: A dictionary or function to convert fine-grained tags to coarse-grained.
+        join_clitics: If `True`, joins clitics to their parent word.
+        join_verb_parts: If `True`, joins multi-part verbs using an underscore.
     """
 
     def __init__(
@@ -86,18 +84,25 @@ class TreebankReader:
         join_clitics: bool = False,
         join_verb_parts: bool = False,
     ) -> None:
+        """Initializes the TreebankReader.
+
+        Args:
+            root: Path to the folder containing corpus files.
+            pos_map: A dictionary or function to convert fine-grained tags to coarse-grained.
+            join_clitics: If `True`, joins clitics to their parent word.
+            join_verb_parts: If `True`, joins multi-part verbs using an underscore.
+        """
         self._root = root
-        self._pos_map = pos_map if pos_map else lambda tags: ",".join(tags)
+        self._pos_map = pos_map if pos_map else _join_tags
         self._join_clitics = join_clitics
         self._join_verb_parts = join_verb_parts
         self._tokenizer = WordTokenizer()
 
     def docs(self: "TreebankReader") -> Iterator[Any]:
-        """اسناد موجود در پیکره را برمی‌گرداند.
+        """Yields the documents available in the corpus.
 
         Yields:
-            سند بعدی.
-
+            The next document (XML object).
         """
         def remove_blanks(node):
             for x in node.childNodes:
@@ -122,7 +127,7 @@ class TreebankReader:
                     print("error in reading", name, e, file=sys.stderr)
 
     def trees(self: "TreebankReader") -> Iterator[str]:
-        """ساختارهای درختی موجود در پیکره را برمی‌گرداند.
+        """Yields the tree structures available in the corpus.
 
         Examples:
             >>> treebank = TreebankReader(root='treebank')
@@ -135,10 +140,8 @@ class TreebankReader:
                   (V است/V)))
               (PUNC ./PUNC))
 
-
         Yields:
-            ساختار درختی بعدی.
-
+            The next tree structure in the corpus.
         """
 
         def traverse(node: str) -> Tree:
@@ -167,8 +170,8 @@ class TreebankReader:
                     pos.append(w.getAttribute("kind"))
                 return pos
 
-            def clitic_join(tree: Tree, clitic: Dict):
-                if type(tree[-1]) == Tree:
+            def clitic_join(tree: Tree, clitic: dict):
+                if isinstance(tree[-1], Tree):
                     return clitic_join(tree[-1], clitic)
 
                 if clitic[0][0][0] == "ا":
@@ -199,7 +202,7 @@ class TreebankReader:
             if (
                 self._join_clitics
                 and len(tree) > 1
-                and type(tree[1]) == Tree
+                and isinstance(tree[1], Tree)
                 and tree[1].label() == "CLITIC"
                 and tree[1][0][1] not in {"P", "V"}
             ):
@@ -209,8 +212,8 @@ class TreebankReader:
             if (
                 self._join_verb_parts
                 and len(tree) > 1
-                and type(tree[1]) == Tree
-                and type(tree[0]) == Tree
+                and isinstance(tree[1], Tree)
+                and isinstance(tree[0], Tree)
                 and tree[0].label() == "AUX"
                 and tree[0][0][0] in self._tokenizer.before_verbs
             ):
@@ -255,8 +258,8 @@ class TreebankReader:
                 traverse(s)
                 yield traverse(s)
 
-    def sents(self: "TreebankReader") -> Iterator[List[Tuple[str, str]]]:
-        """جملات را به شکل مجموعه‌ای از `(توکن،برچسب)`ها برمی‌گرداند.
+    def sents(self: "TreebankReader") -> Iterator[list[tuple[str, str]]]:
+        """Returns sentences as a list of (token, tag) tuples.
 
         Examples:
             >>> treebank = TreebankReader(root='treebank')
@@ -264,14 +267,13 @@ class TreebankReader:
             [('دنیای', 'Ne'), ('آدولف', 'N'), ('بورن', 'N'), ('دنیای', 'Ne'), ('اتفاقات', 'Ne'), ('رویایی', 'AJ'), ('است', 'V'), ('.', 'PUNC')]
 
         Yields:
-            جملهٔ بعدی.
-
+            The next sentence in the corpus.
         """
         for tree in self.trees():
             yield tree.leaves()
 
     def chunked_trees(self: "TreebankReader") -> Iterator[str]:
-        """ساختار درختی را به شکل تقطیع شده برمی‌گرداند.
+        """Returns the tree structure in a chunked format.
 
         Examples:
             >>> from hazm.chunker import tree2brackets
@@ -280,8 +282,7 @@ class TreebankReader:
             '[دنیای آدولف بورن NP] [دنیای اتفاقات رویایی NP] [است VP] .'
 
         Yields:
-            درخت تقطیع شدهٔ بعدی.
-
+            The next chunked tree structure.
         """
 
         def collapse(node, label):
@@ -361,20 +362,20 @@ class TreebankReader:
                 label == "NPA"
                 and len(node) >= 2
                 and (
-                    node[0].label() == "ADJ"
-                    and node[1].label() == "NPC"
-                    or node[0].label() in {"N", "PRON"}
-                    and node[1].label() in {"ADJ", "ADJPA", "N"}
-                    or node[0].label() == "NUM"
-                    and node[1].label() in {"N", "NPC", "MN", "NUM"}
-                    or node[0].label() in {"N", "NPC", "MN"}
-                    and node[1].label() == "NUM"
-                    or node[0].label() == "NPC"
-                    and node[1].label() == "ADJ"
-                    or node[0].label() == "NPA"
-                    and node[1].label() != "NPC"
-                    or node[1].label() == "NPA"
-                    and node[0].label() != "NPC"
+                    (node[0].label() == "ADJ"
+                    and node[1].label() == "NPC")
+                    or (node[0].label() in {"N", "PRON"}
+                    and node[1].label() in {"ADJ", "ADJPA", "N"})
+                    or (node[0].label() == "NUM"
+                    and node[1].label() in {"N", "NPC", "MN", "NUM"})
+                    or (node[0].label() in {"N", "NPC", "MN"}
+                    and node[1].label() == "NUM")
+                    or (node[0].label() == "NPC"
+                    and node[1].label() == "ADJ")
+                    or (node[0].label() == "NPA"
+                    and node[1].label() != "NPC")
+                    or (node[1].label() == "NPA"
+                    and node[0].label() != "NPC")
                 )
             ):
                 chunks.append(collapse(node, "NP"))
@@ -405,7 +406,7 @@ class TreebankReader:
                 chunks.append(Tree("ADVP", [node]))
                 return
 
-            if type(node[0]) != Tree:
+            if not isinstance(tree[0], Tree):
                 chunks.append(node)
                 return
 

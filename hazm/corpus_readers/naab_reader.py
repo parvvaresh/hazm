@@ -1,25 +1,31 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ ناب است.
+"""This module includes classes and functions for reading the Naab corpus.
 
-[پیکرهٔ ناب](https://huggingface.co/datasets/SLPL/naab/) متشکل از ۱۳۰ گیگابایت متن تمیزشدهٔ فارسی متشکل از ۲۵۰ میلیون پاراگراف و ۱۵ میلیارد کلمه است.
-
+The [Naab corpus](https://huggingface.co/datasets/SLPL/naab/) consists of 130 GB
+of cleaned Persian text comprising 250 million paragraphs and 15 billion words.
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 
 class NaabReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ ناب است.
+    """This class includes functions for reading the Naab corpus.
 
     Args:
-        corpus_folder: مسیر فولدر حاوی فایل‌های پیکره.
-        subset: نوع دیتاست: `test` یا `train`
+        corpus_folder: Path to the folder containing the corpus files.
+        subset: The dataset subset: `test` or `train`.
     """
 
     def __init__(self: "NaabReader", corpus_folder: str, subset: str="train") -> None:
+        """Initializes the Naab reader.
+
+        Args:
+            corpus_folder: Path to the folder containing the corpus files.
+            subset: The dataset subset: `test` or `train`.
+        """
         self._file_paths=Path(corpus_folder).glob(f"{subset}*.txt")
 
     def sents(self: "NaabReader") -> Iterator[str]:
-        """جملات پیکره را یک‌به‌یک برمی‌گرداند.
+        """Yields sentences from the corpus one by one.
 
         Examples:
             >>> naab = NaabReader("naab", "test")
@@ -27,7 +33,7 @@ class NaabReader:
             این وبلاگ زیر نظر وب‌های زیر به کار خود ادامه می‌دهد
 
         Yields:
-           جملهٔ بعدی.
+            The next sentence in the corpus.
         """
         for file_path in self._file_paths:
                 with Path(file_path).open("r", encoding="utf-8") as file:

@@ -1,43 +1,29 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای ریشه‌یابی کلمات است.
+"""This module includes classes and functions for word stemming.
 
-فرق بین [Lemmatizer](./lemmatizer.md) و [Stemmer](./stemmer.md) این است که
-اِستمر درکی از معنای کلمه ندارد و صرفاً براساس حذف برخی از پسوندهای ساده تلاش
-می‌کند ریشهٔ کلمه را بیابد؛ بنابراین ممکن است در ریشه‌یابیِ برخی از کلمات نتایج
-نادرستی ارائه دهد؛ اما لماتایزر براساس لیستی از کلمات مرجع به همراه ریشهٔ آن
-این
-کار را انجام می‌دهد و نتایج دقیق‌تری ارائه می‌دهد. البته هزینهٔ این دقت، سرعتِ
-کمتر در ریشه‌یابی است.
-
+The difference between [Lemmatizer](./lemmatizer.md) and [Stemmer](./stemmer.md) is that
+the Stemmer has no understanding of the word's meaning and merely tries to find
+the root by removing some simple suffixes; therefore, it may provide incorrect
+results for some words. However, the Lemmatizer performs this task based on a
+reference list of words along with their roots, offering more accurate results.
+Of course, the cost of this accuracy is lower speed in stemming.
 """
-
 
 from nltk.stem.api import StemmerI
 
+from hazm.constants import SUFFIXES
+
 
 class Stemmer(StemmerI):
-    """این کلاس شامل توابعی برای ریشه‌یابی کلمات است."""
+    """This class includes methods for finding the stem of words."""
 
-    def __init__(self: "Stemmer") -> None:
-        self.ends = [
-            "ات",
-            "ان",
-            "ترین",
-            "تر",
-            "م",
-            "ت",
-            "ش",
-            "یی",
-            "ی",
-            "ها",
-            "ٔ",
-            "‌ا",
-            "‌",
-        ]
+    def __init__(self) -> None:
+        """Initializes the Stemmer with a sorted list of suffixes."""
+        self.ends = sorted(SUFFIXES | {"ٔ", "‌ا", "‌"}, key=len, reverse=True)
 
-    def stem(self: "Stemmer", word: str) -> str:
-        """ریشهٔ کلمه را پیدا می‌کند.
+    def stem(self, word: str) -> str:
+        """Finds the stem of the word.
 
-        Examples:
+        Example:
             >>> stemmer = Stemmer()
             >>> stemmer.stem('کتابی')
             'کتاب'
@@ -52,18 +38,25 @@ class Stemmer(StemmerI):
             >>> stemmer.stem('خانۀ')
             'خانه'
 
+
         Args:
-            word: کلمه‌ای که باید ریشهٔ آن پیدا شود.
+            word: The input word to be stemmed.
 
         Returns:
-            ریشهٔ کلمه.
-
+            The stemmed version of the word.
         """
         for end in self.ends:
             if word.endswith(end):
+                if len(end) == 1 and len(word) - len(end) < 3:
+                    continue
+
                 word = word[:-len(end)]
+                break
 
         if word.endswith("ۀ"):
             word = word[:-1] + "ه"
+
+        if word.endswith("\u200c"):
+            word = word[:-1]
 
         return word

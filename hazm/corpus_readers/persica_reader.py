@@ -1,43 +1,41 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ پرسیکا است.
+"""This module includes classes and functions for reading the Persica corpus.
 
-[پیکرهٔ پرسیکا](https://www.peykaregan.ir/dataset/%D9%BE%D8%B1%D8%B3%DB%8C%DA%A
-9%D8%A7-%D9%BE%DB%8C%DA%A9%D8%B1%D9%87-%D9%85%D8%AA%D9%88%D9%86-
-%D8%AE%D8%A8%D8%B1%DB%8C) حاوی
-خبرهای برگرفته از خبرگزاری ایسنا در یازده دستهٔ ورزشی، اقتصادی، فرهنگی، مذهبی،
-تاریخی، سیاسی، علمی، اجتماعی، آموزشی، حقوق قضایی و بهداشت است. روی این داده‌ها
-پیش‌پردازش‌هایی صورت شده و آمادهٔ استفاده در کاربردهای مختلف پردازش زبان طبیعی
-و
-داده‌کاوی است.
-
+The [Persica corpus](https://www.peykaregan.ir/dataset/%D9%BE%D8%B1%D8%B3%DB%8C%DA%A9%D8%A7-%D9%BE%DB%8C%DA%A9%D8%B1%D9%87-%D9%85%D8%AA%D9%88%D9%86-%D8%AE%D8%A8%D8%B1%DB%8C)
+contains news articles extracted from the ISNA news agency in eleven categories:
+sports, economics, culture, religion, history, politics, science, social,
+education, judicial law, and health. This data has been preprocessed and is
+ready for use in various natural language processing and data mining applications.
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
 
 
 class PersicaReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ پرسیکا است.
+    """This class includes functions for reading the Persica corpus.
 
     Args:
-        csv_file: مسیر فایلِ پیکره با پسوند csv.
-
+        csv_file: Path to the corpus file with a .csv extension.
     """
 
     def __init__(self: "PersicaReader", csv_file: str) -> None:
+        """Initializes the Persica reader.
+
+        Args:
+            csv_file: Path to the corpus file with a .csv extension.
+        """
         self._csv_file = csv_file
 
-    def docs(self: "PersicaReader") -> Iterator[Dict[str, str]]:
-        """خبرها را برمی‌گرداند.
+    def docs(self: "PersicaReader") -> Iterator[dict[str, str]]:
+        """Yields news articles one by one.
 
-        هر خبر، شی‌ای متشکل از این پارامتر است:
-
-        - شناسه (`id`)
-        - عنوان (`title`)
-        - متن (`text`)
-        - تاریخ (`date`)
-        - زمان (`time`)
-        - دستهٔ اصلی (`category`)
-        - دستهٔ فرعی (`category2`)
+        Each news article is a dictionary consisting of these parameters:
+        - `id`: Unique identifier.
+        - `title`: Title of the news.
+        - `text`: Main body of the news.
+        - `date`: Publication date.
+        - `time`: Publication time.
+        - `category`: Primary category.
+        - `category2`: Secondary category.
 
         Examples:
             >>> persica = PersicaReader('persica.csv')
@@ -45,34 +43,34 @@ class PersicaReader:
             843656
 
         Yields:
-            خبر بعدی.
-
+            A dictionary containing the next news article's metadata and content.
         """
         lines = []
-        for current_line in Path(self._csv_file).open(encoding="utf-8-sig"):
-            current_line = current_line.strip()
-            if current_line:
-                if current_line.endswith(","):
-                    lines.append(current_line[:-1])
-                else:
-                    lines.append(current_line)
-                    yield {
-                        "id": int(lines[0]),
-                        "title": lines[1],
-                        "text": lines[2],
-                        "date": lines[3],
-                        "time": lines[4],
-                        "category": lines[5],
-                        "category2": lines[6],
-                    }
-                    lines = []
+        with Path(self._csv_file).open(encoding="utf-8-sig") as file:
+            for current_line in file:
+                current_line = current_line.strip()
+                if current_line:
+                    if current_line.endswith(","):
+                        lines.append(current_line[:-1])
+                    else:
+                        lines.append(current_line)
+                        yield {
+                            "id": int(lines[0]),
+                            "title": lines[1],
+                            "text": lines[2],
+                            "date": lines[3],
+                            "time": lines[4],
+                            "category": lines[5],
+                            "category2": lines[6],
+                        }
+                        lines = []
 
     def texts(self: "PersicaReader") -> Iterator[str]:
-        """فقط متن خبرها را برمی‌گرداند.
+        """Yields only the text content of the news articles.
 
-        این تابع صرفاً برای راحتی بیشتر تهیه شده وگرنه با همان تابع
-        ‍[docs()][hazm.corpus_readers.persica_reader.PersicaReader.docs] و دریافت مقدار پراپرتی
-        `text` نیز می‌توانید همین کار را انجام دهید.
+        This function is provided for convenience; the same result can be
+        achieved by using the [docs()][hazm.corpus_readers.persica_reader.PersicaReader.docs]
+        method and accessing the `text` property.
 
         Examples:
             >>> persica = PersicaReader('persica.csv')
@@ -80,8 +78,7 @@ class PersicaReader:
             True
 
         Yields:
-            متنِ خبر بعدی.
-
+            The text content of the next news article.
         """
         for doc in self.docs():
             yield doc["text"]

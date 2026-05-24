@@ -1,16 +1,12 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ Quranic Arabic است.
+"""This module includes classes and functions for reading the Quranic Arabic corpus.
 
-پیکرهٔ [Quranic Arabic](https://corpus.quran.com/) شامل قواعد نحوی و اطلاعات
-ریخت‌شناسی تک‌تک کلمات قرآن کریم است.
-
+The [Quranic Arabic](https://corpus.quran.com/) corpus contains syntactic rules
+and morphological information for every word in the Holy Quran.
 """
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
-from hazm.utils import maketrans
+from ..utils import maketrans
 
 buckwalter_transliteration = maketrans(
     "'>&<}AbptvjHxd*rzs$SDTZEg_fqklmnhwYyFNKaui~o^#`{:@\"[;,.!-+%]",
@@ -19,24 +15,28 @@ buckwalter_transliteration = maketrans(
 
 
 class QuranReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ Quranic Arabic است.
+    """This class includes functions for reading the Quranic Arabic corpus.
 
     Args:
-        quran_file: مسیر فایلِ پیکره
-
+        quran_file: Path to the corpus file.
     """
 
     def __init__(self: "QuranReader", quran_file: str) -> None:
+        """Initializes the QuranReader with the given file path.
+
+        Args:
+            quran_file: Path to the corpus file.
+        """
         self._quran_file = quran_file
 
-    def parts(self: "QuranReader") -> Iterator[Dict[str, str]]:
-        """اجزای متن قرآن را به‌همراه اطلاعات نحوی‌شان برمی‌گرداند.
+    def parts(self: "QuranReader") -> Iterator[dict[str, str]]:
+        """Yields the parts of the Quranic text along with their syntactic information.
 
-        یک جزء لزوماً یک کلمه نیست؛ مثلاً واژهٔ «الرحمن» از دو جزء «ال» و «رحمن» تشکیل
-        شده است.
+        A part is not necessarily a word; for example, the word "Ar-Rahman" is
+        composed of two parts: "Al" and "Rahman".
 
         Examples:
-            >>> parts=QuranReader(quran_file='quranic_corpus_morphology.txt').parts()
+            >>> parts = QuranReader(quran_file='quranic_corpus_morphology.txt').parts()
             >>> print(next(parts))
             {'loc': (1, 1, 1, 1), 'text': 'بِ', 'tag': 'P'}
             >>> print(next(parts))
@@ -45,44 +45,58 @@ class QuranReader:
             {'loc': (1, 1, 2, 1), 'text': 'ٱللَّهِ', 'tag': 'PN', 'lem': 'ٱللَّه', 'root': 'اله'}
 
         Yields:
-            جزء بعدی متن قرآن.
-
+            The next part of the Quranic text.
         """
-        for line in Path(self._quran_file).open(encoding="utf8"):
-            if not line.startswith("("):
-                continue
-            parts = line.strip().split("\t")
+        with Path(self._quran_file).open(encoding="utf8") as file:
+            for line in file:
+                if not line.startswith("("):
+                    continue
+                parts = line.strip().split("\t")
 
-            part = {
-                "loc": eval(parts[0].replace(":", ",")), # noqa: PGH001
-                "text": parts[1].translate(buckwalter_transliteration),
-                "tag": parts[2],
-            }
+                part = {
+                    "loc": eval(parts[0].replace(":", ",")),
+                    "text": parts[1].translate(buckwalter_transliteration),
+                    "tag": parts[2],
+                }
 
-            features = parts[3].split("|")
-            for feature in features:
-                if feature.startswith("LEM:"):
-                    part["lem"] = feature[4:].translate(buckwalter_transliteration)
-                elif feature.startswith("ROOT:"):
-                    part["root"] = feature[5:].translate(buckwalter_transliteration)
-            yield part
+                features = parts[3].split("|")
+                for feature in features:
+                    if feature.startswith("LEM:"):
+                        part["lem"] = feature[4:].translate(buckwalter_transliteration)
+                    elif feature.startswith("ROOT:"):
+                        part["root"] = feature[5:].translate(buckwalter_transliteration)
+                yield part
 
     def words(
         self: "QuranReader",
-    ) -> Iterator[Tuple[str, str, str, str, str, List[Dict[str, str]]]]:
-        """اطلاعات صرفی کلمات قرآن را برمی‌گرداند.
+    ) -> Iterator[tuple[str, str, str, str, str, list[dict[str, str]]]]:
+        """Yields morphological information for the words of the Quran.
 
         Examples:
-            >>> words=QuranReader(quran_file='quranic_corpus_morphology.txt').words()
+            >>> words = QuranReader(quran_file='quranic_corpus_morphology.txt').words()
             >>> print(next(words))
             ('1.1.1', 'بِسْمِ', 'ٱسْم', 'سمو', 'P-N', [{'text': 'بِ', 'tag': 'P'}, {'text': 'سْمِ', 'tag': 'N', 'lem': 'ٱسْم', 'root': 'سمو'}])
 
         Yields:
-            اطلاعات صرفی کلمهٔ بعدی قرآن.
-
+            Morphological information of the next word in the Quran.
         """
 
-        def word_item(location: Tuple[int], parts: List[Dict]) -> str:
+        def word_item(location: tuple[int], parts: list[dict]) -> str:
+            """Formats word-level information from its constituent parts.
+
+            Args:
+                location: A tuple representing the location (chapter, verse, word).
+                parts: A list of dictionaries, where each dictionary represents a part of the word.
+
+            Returns:
+                A tuple containing:
+                    - Formatted location string (e.g., '1.1.1').
+                    - Combined text of the word.
+                    - Combined lemmas.
+                    - Combined roots.
+                    - Combined tags.
+                    - List of parts dictionaries.
+            """
             text = "".join([part["text"] for part in parts])
             tag = "-".join([part["tag"] for part in parts])
             lem = "-".join([part["lem"] for part in parts if "lem" in part])

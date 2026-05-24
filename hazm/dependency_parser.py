@@ -1,368 +1,272 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای شناساییِ وابستگی‌های دستوری متن است.
-برای استفاده از این ماژول، ابتدا [پیش‌نیازهای `dependecy_parser` را با حجمی حدود ۱۳ مگابایت دانلود کنید](https://github.com/roshan-research/hazm#pretrained-models) و در ریشهٔ پروژه یا مسیر دلخواه اکسترکت کنید.
+"""This module includes classes and functions for identifying grammatical dependencies in text."""
 
-"""
-
-
-import os
+import logging
+import shutil
+import subprocess
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Type
+from typing import Any
 
 from nltk.parse import DependencyGraph
-from nltk.parse.api import ParserI
 from nltk.parse.malt import MaltParser as NLTKMaltParser
 
-from tqdm import tqdm
-from typing import List, Tuple
-import os
+try:
+    import spacy
+    from spacy.tokens import Doc
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = Any
+
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
+
+logger = logging.getLogger(__name__)
+
 
 class MaltParser(NLTKMaltParser):
-    """این کلاس شامل توابعی برای شناسایی وابستگی‌های دستوری است.
-
-    Args:
-        tagger: نام تابع `POS Tagger`.
-        lemmatizer: نام کلاس ریشه‌یاب.
-        working_dir: مسیر فولدر حاوی پیش‌نیازهای اجرایی این ماژول.
-        model_file: آدرس مدلِ از پیش آموزش دیده با پسوند `mco`.
-
-    """
+    """This class includes functions for identifying grammatical dependencies using MaltParser."""
 
     def __init__(
-        self: "MaltParser",
-        tagger: str,
-        lemmatizer: str,
+        self,
+        tagger: Any,
+        lemmatizer: Any,
         working_dir: str = "universal_dependency_parser",
-        model_file: str = "langModel.mco",  # Don't rename this file
+        model_file: str = "langModel.mco",
+        repo_id: str | None = None,
+        model_filename: str | None = None,
     ) -> None:
+        """Constructor for MaltParser."""
         self.tagger = tagger
-        self.working_dir = working_dir
-        self.mco = model_file
-        self._malt_bin = os.path.join(working_dir, "malt.jar") # noqa: PTH118
         self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_" # noqa: ARG005
+            lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
 
-    def parse_sents(self: "MaltParser", sentences: str, verbose: bool = False) -> str:
-        """گراف وابستگی را برمی‌گرداند.
+        self._final_working_dir = working_dir
+        self._model_base_name = model_file.replace(".mco", "")
 
-        Args:
-            sentences: جملاتی که باید گراف وابستگی آن‌ها استخراج شود.
-            verbose: اگر `True` باشد وابستگی‌های بیشتری را برمی‌گرداند.
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import snapshot_download
 
-        Returns:
-            گراف وابستگی.
+                cache_dir = snapshot_download(repo_id=repo_id)
 
-        """
+                self._final_working_dir = cache_dir
+                self._model_base_name = model_filename.replace(".mco", "")
+
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
+            except Exception as e:
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
+
+    def parse_sents(self, sentences: list[Sentence], verbose: bool = False) -> Iterator[DependencyGraph]:
+        """Returns the dependency graph for a list of sentences."""
         tagged_sentences = self.tagger.tag_sents(sentences)
         return self.parse_tagged_sents(tagged_sentences, verbose)
 
     def parse_tagged_sents(
-        self: "MaltParser",
-        sentences: List[List[Tuple[str, str]]],
-        verbose: bool = False,
-    ) -> str:
-        """گراف وابستگی‌ها را برای جملات ورودی برمی‌گرداند.
-
-        Args:
-            sentences: جملاتی که باید گراف وابستگی‌های آن استخراج شود.
-            verbose: اگر `True` باشد وابستگی‌های بیشتری را برمی‌گرداند..
-
-        Returns:
-            گراف وابستگی جملات.
-
-        Raises:
-            Exception: در صورت بروز خطا یک اکسپشن عمومی صادر می‌شود.
-
-        """
-        input_file = tempfile.NamedTemporaryFile(
-            prefix="malt_input.conll",
-            dir=self.working_dir,
-            delete=False,
-        )
-        output_file = tempfile.NamedTemporaryFile(
-            prefix="malt_output.conll",
-            dir=self.working_dir,
-            delete=False,
-        )
-
+        self,
+        sentences: list[TaggedSentence],
+        verbose: bool = False, # noqa: ARG002
+    ) -> Iterator[DependencyGraph]:
+        """Returns dependency graphs for input sentences by executing MaltParser."""
+        # Check if Java is installed
         try:
-            for sentence in sentences:
-                for i, (word, tag) in enumerate(sentence, start=1):
-                    word = word.strip()
-                    if not word:
-                        word = "_"
-                    input_file.write(
-                        (
-                            "\t".join(
-                                [
-                                    str(i),
-                                    word.replace(" ", "_"),
-                                    self.lemmatize(word, tag).replace(" ", "_"),
-                                    tag,
-                                    tag,
-                                    "_",
-                                    "0",
-                                    "ROOT",
-                                    "_",
-                                    "_",
-                                    "\n",
-                                ],
-                            )
-                        ).encode("utf8"),
-                    )
-                input_file.write(b"\n\n")
-            input_file.close()
+            subprocess.run(["java", "-version"], capture_output=True, check=True)
+        except Exception as e:
+            msg = "Java is not installed. Please install JRE/JDK (e.g., !apt-get install default-jre)."
+            raise RuntimeError(msg) from e
 
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            input_path = temp_path / "malt_input.conll"
+            output_path = temp_path / "malt_output.conll"
+
+            source_dir = Path(self._final_working_dir)
+
+            # 1. Copy Model File (.mco)
+            model_source = source_dir / f"{self._model_base_name}.mco"
+            if not model_source.exists():
+                msg = f"Model file not found at {model_source}"
+                raise FileNotFoundError(msg)
+            shutil.copy(str(model_source), str(temp_path))
+
+            # 2. Copy ALL .jar files (Flattening structure)
+            jars = list(source_dir.rglob("*.jar"))
+            if not jars:
+                msg = f"No .jar files found in {source_dir}. MaltParser requires malt.jar and dependencies."
+                raise FileNotFoundError(msg)
+
+            for jar in jars:
+                shutil.copy(str(jar), str(temp_path))
+
+            # 3. Create input CoNLL file
+            with input_path.open("w", encoding="utf8") as input_file:
+                for sentence in sentences:
+                    for i, (word, tag) in enumerate(sentence, start=1):
+                        word = word.strip() or "_"
+                        lemma = self.lemmatize(word, tag) or "_"
+                        input_file.write(
+                            f"{i}\t{word.replace(' ', '_')}\t{lemma.replace(' ', '_')}\t{tag}\t{tag}\t_\t0\tROOT\t_\t_\n",
+                        )
+                    input_file.write("\n\n")
+
+            # 4. Command execution
             cmd = [
                 "java",
-                "-jar",
-                self._malt_bin,
-                "-w",
-                self.working_dir,
-                "-c",
-                self.mco,
-                "-i",
-                input_file.name,
-                "-o",
-                output_file.name,
-                "-m",
-                "parse",
+                "-Xmx512m",
+                "-cp", "*",
+                "org.maltparser.Malt",
+                "-w", ".",
+                "-c", str(self._model_base_name),
+                "-i", "malt_input.conll",
+                "-o", "malt_output.conll",
+                "-m", "parse",
             ]
-            if self._execute(cmd, verbose) != 0:
-                raise Exception("MaltParser parsing failed: %s" % " ".join(cmd))
 
-            return (
-                DependencyGraph(item, top_relation_label='root')
-                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: SIM115, PTH123
-                if item.strip()
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=str(temp_path),
             )
+            stdout, stderr = process.communicate()
 
-        finally:
-            input_file.close()
-            os.remove(input_file.name) # noqa: PTH107
-            output_file.close()
-            os.remove(output_file.name) # noqa: PTH107
+            if process.returncode != 0:
+                msg = f"MaltParser execution failed.\nCMD: {' '.join(cmd)}\nSTDOUT: {stdout}\nSTDERR: {stderr}"
+                raise RuntimeError(msg)
 
+            # 5. Parse results
+            if not output_path.exists():
+                 msg = f"MaltParser failed to generate output file.\nSTDERR: {stderr}"
+                 raise RuntimeError(msg)
 
-class TurboParser(ParserI):
-    """interfaces [TurboParser](http://www.ark.cs.cmu.edu/TurboParser/) which you must
-    manually install.
-
-    """
-
-    def __init__(self: "TurboParser", tagger, lemmatizer: str, model_file: str) -> None:
-        self.tagger = tagger
-        self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_" # noqa: ARG005
-        )
-
-        import turboparser
-
-        self._pturboparser = turboparser.PTurboParser()
-        self.interface = self._pturboparser.create_parser()
-        self.interface.load_parser_model(model_file)
-
-    def parse_sents(
-        self: "TurboParser",
-        sentences: List[List[Tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
-        """parse_sents."""
-        tagged_sentences = self.tagger.tag_sents(sentences)
-        return self.tagged_parse_sents(tagged_sentences)
-
-    def tagged_parse_sents(
-        self: "TurboParser",
-        sentences: List[List[Tuple[str, str]]],
-    ) -> Type[DependencyGraph]:
-        """tagged_parse_sents."""
-        input_file = tempfile.NamedTemporaryFile(
-            prefix="turbo_input.conll",
-            dir="dependency_parser",
-            delete=False,
-        )
-        output_file = tempfile.NamedTemporaryFile(
-            prefix="turbo_output.conll",
-            dir="dependency_parser",
-            delete=False,
-        )
-
-        try:
-            for sentence in sentences:
-                for i, (word, tag) in enumerate(sentence, start=1):
-                    word = word.strip()
-                    if not word:
-                        word = "_"
-                    input_file.write(
-                        (
-                            "\t".join(
-                                [
-                                    str(i),
-                                    word.replace(" ", "_"),
-                                    self.lemmatize(word, tag).replace(" ", "_"),
-                                    tag,
-                                    tag,
-                                    "_",
-                                    "0",
-                                    "ROOT",
-                                    "_",
-                                    "_",
-                                    "\n",
-                                ],
-                            )
-                        ).encode("utf8"),
-                    )
-                input_file.write(b"\n")
-            input_file.close()
-
-            self.interface.parse(input_file.name, output_file.name)
-
-            return (
-                DependencyGraph(item, cell_extractor=lambda cells: cells[1:8])
-                for item in open(output_file.name, encoding="utf8").read().split("\n\n") # noqa: SIM115, PTH123
-                if item.strip()
-            )
-
-        finally:
-            input_file.close()
-            os.remove(input_file.name) # noqa: PTH107
-            output_file.close()
-            os.remove(output_file.name) # noqa: PTH107
-
-
-class DependencyParser(MaltParser):
-    """این کلاس شامل توابعی برای شناسایی وابستگی‌های دستوری است.
-
-    این کلاس تمام توابع خود را از کلاس
-    [MaltParser][hazm.dependency_parser.MaltParser] به ارث می‌برد.
-
-    Examples:
-        >>> from hazm import POSTagger, Lemmatizer, DependencyParser
-        >>> parser = DependencyParser(tagger=POSTagger(model='pos_tagger.model'), lemmatizer=Lemmatizer())
-        >>> parser.parse(['من', 'به', 'مدرسه', 'رفته بودم', '.']).tree().pprint()
-        (من (به (مدرسه (رفته_بودم .))))
-    """
-
+            with output_path.open(encoding="utf8") as output_file:
+                content = output_file.read()
+                for item in content.split("\n\n"):
+                    if item.strip():
+                        yield DependencyGraph(item, top_relation_label="root")
 
 
 class SpacyDependencyParser(MaltParser):
+    """A Dependency Parser based on the Spacy library."""
+
     def __init__(
-        self: "SpacyDependencyParser",
-        tagger: object,
-        lemmatizer: object,
-        working_dir: str = "universal_dependency_parser",
-        model_file: str = "dependency_parser/ParsbertChangeTag/model-best"
+        self,
+        tagger: Any,
+        lemmatizer: Any,
+        model_path: str | Path | None = None,
+        using_gpu: bool = False,
+        gpu_id: int = 0,
+        repo_id: str | None = None,
     ) -> None:
-        import spacy
-        from spacy.tokens import Doc
-        from tqdm import tqdm
-        from typing import List, Tuple
+        """Initialize Spacy-based parser."""
+        if not SPACY_AVAILABLE:
+            msg = "To use Spacy-based models, please install hazm: pip install hazm[all]"
+            raise ImportError(msg)
 
-
-        """
-        Initialize the SpacyDependencyParser object.
-
-        Parameters:
-        - tagger: An object responsible for part-of-speech tagging.
-        - lemmatizer: An object responsible for lemmatization.
-        - working_dir: The directory where temporary files are stored.
-        - model_file: The path to the Spacy dependency parser model file.
-        """
         self.tagger = tagger
-        self.working_dir = working_dir
-        self.mco = model_file
         self.lemmatize = (
-            lemmatizer.lemmatize if lemmatizer else lambda w, t: "_" # noqa: ARG005
+            lemmatizer.lemmatize if lemmatizer else lambda _w, _t: "_"
         )
-        self.peykare_dict = {}
-        self._setup_model()
 
-    def _setup_model(self:"SpacyDependencyParser"):
-        """
-        Load the Spacy dependency parser model and set up a custom tokenizer.
-        """
-        try:
-            self.model = spacy.load(self.mco)
-            self.model.tokenizer = self._custom_tokenizer
-        except:
-            raise ValueError("Something wrong loading the dependencyParser . Checkout for correctness or existence of path")
+        self.model_path = str(model_path) if model_path else None
+        self.using_gpu = using_gpu
+        self.gpu_id = gpu_id
+        self.model = None
+        self.gpu_availability = False
 
-    def _add_sentence2dict(self:"SpacyDependencyParser", sent):
-        """
-        Add a sentence to the dictionary for later use in custom tokenization.
+        if repo_id:
+            try:
+                from huggingface_hub import snapshot_download
+                self.model_path = snapshot_download(repo_id=repo_id)
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
+            except Exception as e:
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
-        Parameters:
-        - sent: The sentence to be added to the dictionary.
-        """
-        self.peykare_dict[' '.join([w for w in sent])] = [w for w in sent]
+        self.peykare_dict: dict[str, list[str]] = {}
 
-    def _custom_tokenizer(self:"SpacyDependencyParser", text):
-        """
-        Custom tokenizer function for Spacy, using a pre-built dictionary.
+        if self.model_path:
+            self._setup()
 
-        Parameters:
-        - text: The input text to be tokenized.
-        """
-        if text not in self.peykare_dict:
-            self._add_sentence2dict(text)
-        return Doc(self.model.vocab, self.peykare_dict[text])
+    def _setup(self) -> None:
+        if self.using_gpu:
+            self._setup_gpu()
+        else:
+            logger.info("Using CPU for SpacyDependencyParser.")
 
-    def parse_sents(self: MaltParser, sentences: str, verbose: bool = False) -> str:
-        """
-        Parse a list of sentences and return the dependency graphs.
+        if self.model_path and Path(self.model_path).exists():
+             self.model = spacy.load(self.model_path)
+             self.model.tokenizer = self._custom_tokenizer
 
-        Parameters:
-        - sentences: List of sentences to be parsed.
-        - verbose: Whether to print additional information during parsing.
-        """
-        for sentence in sentences:
-            self._add_sentence2dict(sentence)
+    def _setup_gpu(self) -> None:
+        logger.info("GPU Setup Process Started...")
+        if spacy.prefer_gpu(self.gpu_id):
+            logger.info("GPU is available and ready for use.")
+            spacy.require_gpu(self.gpu_id)
+            self.gpu_availability = True
+        else:
+            logger.warning("GPU is not available; spaCy will use CPU.")
+            self.gpu_availability = False
 
-        tagged_sentences = self.tagger.tag_sents(sentences,universal_tag=True)
-        return self.parse_tagged_sents(tagged_sentences, verbose)
+    def _custom_tokenizer(self, text: str) -> Doc:
+        if self.model and text in self.peykare_dict:
+            return Doc(self.model.vocab, self.peykare_dict[text])
+        msg = "No tokenization available for input."
+        raise ValueError(msg)
 
+    def _update_dictionary(self, sents: list[list[str]]) -> None:
+        """Add sentences to dictionary."""
+        for sent in sents:
+            key = " ".join(sent)
+            if key not in self.peykare_dict:
+                self.peykare_dict[key] = sent
 
-    def _spacy_to_conll(self,doc):
-        conll_lines = []
-        for token in doc:
-            head_id = token.head.i + 1
+    def parse(self, sentence: list[str]) -> DependencyGraph:
+        """Parse a single sentence."""
+        return next(self.parse_sents([sentence]))
 
-            conll_lines.append(
-                "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(
-                    token.i + 1,
-                    token.text.replace(" ", "_"),
-                    self.lemmatize(token.text, token.pos_).replace(" ", "_"),
-                    token.pos_,
-                    token.pos_,
-                    "_",
-                    head_id,
-                    token.dep_, 
-                    "_",
-                    "_",
-                )
-            )
-        return "\n".join(conll_lines)
+    def parse_sents(self, sentences: list[list[str]]) -> Iterator[DependencyGraph]:
+        """Parse multiple sentences using Spacy pipeline."""
+        if self.model is None:
+             msg = "Model not loaded."
+             raise ValueError(msg)
 
-    def parse_tagged_sents(self: "SpacyDependencyParser", sentences: List[List[Tuple[str, str]]], verbose: bool = False) -> str:
-        """
-        Parse a list of tagged sentences and return the dependency graphs.
+        cleaned_sentences = []
+        for sent in sentences:
+            if sent and isinstance(sent[0], tuple):
+                cleaned_sentences.append([word for word, _ in sent])
+            else:
+                cleaned_sentences.append(sent)
 
-        Parameters:
-        - sentences: List of tagged sentences to be parsed.
-        - verbose: Whether to print additional information during parsing.
-        """
-        texts = [' '.join([w for w , _ in sentence]) for sentence in sentences]
-        docs = list(self.model.pipe(texts))
-        conll_list = []
-        for doc_id , doc in enumerate(docs):
-            pos_tags = [tag for w , tag in sentences[doc_id]]
-            for i in range(len(doc)):
-                docs[doc_id][i].pos_ = pos_tags[i]
-            conll_sample = self._spacy_to_conll(docs[doc_id])
-            conll_list.append(conll_sample)
+        docs = []
+        for tokens in cleaned_sentences:
+            doc = Doc(self.model.vocab, words=tokens)
+            for _name, proc in self.model.pipeline:
+                doc = proc(doc)
+            docs.append(doc)
 
-        return (
-            DependencyGraph(item)
-            for item in conll_list
-            if item.strip()
-        )
+        for doc in docs:
+            conll_lines = []
+            for token in doc:
+                head_index = token.head.i + 1
+                if token.i == token.head.i:
+                    head_index = 0
+
+                lemma = token.lemma_ if token.lemma_ else "_"
+                pos = token.pos_ if token.pos_ else "_"
+                tag = token.tag_ if token.tag_ else "_"
+                dep = token.dep_ if token.dep_ else "_"
+
+                line = f"{token.i + 1}\t{token.text}\t{lemma}\t{pos}\t{tag}\t_\t{head_index}\t{dep}\t_\t_"
+                conll_lines.append(line)
+
+            conll_str = "\n".join(conll_lines)
+            yield DependencyGraph(conll_str, top_relation_label="root")

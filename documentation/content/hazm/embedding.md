@@ -1,9 +1,9 @@
-??? info "کاربرد عملی"
-
-    برای آشنایی با کاربرد این ماژول می‌توانید به بخش کاربردهای هضم مراجعه کنید.
-
-    در پروژه‌های زیر از این ماژول استفاده شده است:
-
-    - [پروژهٔ استخراج کلمات کلیدی](../samples/keyword_extraction.md)
-    
 ::: hazm.embedding
+    handler: python
+    options:
+        members:
+            - WordEmbedding
+            - SentEmbedding
+            - SentenceEmbeddingCorpus
+        show_root_heading: false
+        show_source: false

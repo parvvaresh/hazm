@@ -1,27 +1,34 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای خواندن پیکرهٔ pn-summary است.
+"""This module includes classes and functions for reading the pn-summary corpus.
 
-پیکرهٔ [pn-summary](https://github.com/hooshvare/pn-summary) با هدف کمک به سیستم‌های یادگیری عمیق و ساخت مدل‌های بهتر برای خلاصه‌سازی دقیق‌تر متن‌های فارسی تهیه شده است. این پیکره شامل ۹۳,۲۰۷ متن خبری تمیزشده است که از ۶ خبرگزاری فارسی و از میان حدوداً ۲۰۰ هزار خبر استخراج شده است.
+The [pn-summary](https://github.com/hooshvare/pn-summary) corpus was prepared to
+help deep learning systems and build better models for more accurate Persian
+text summarization. This corpus includes 93,207 cleaned news texts extracted
+from 6 Persian news agencies out of approximately 200,000 news items.
 """
 import csv
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
 
 class PnSummaryReader:
-    """این کلاس شامل توابعی برای خواندن پیکرهٔ pn-summary است.
+    """This class includes functions for reading the pn-summary corpus.
 
     Args:
-        corpus_folder: مسیر فولدر حاوی فایل‌های پیکره.
-        subset: نوع دیتاست: `test` یا `train` یا `dev`
+        corpus_folder: Path to the folder containing the corpus files.
+        subset: The dataset subset; can be `test`, `train`, or `dev`.
     """
 
     def __init__(self: "PnSummaryReader", corpus_folder: str, subset: str="train") -> None:
+        """Initializes the PnSummaryReader.
+
+        Args:
+            corpus_folder: Path to the folder containing the corpus files.
+            subset: The dataset subset; can be `test`, `train`, or `dev`.
+        """
         self._file_paths=Path(corpus_folder).glob(f"{subset}*.csv")
 
-    def docs(self: "PnSummaryReader") -> Iterator[Tuple[str, str, str, str, str, List[str], str, str]]:
-        """خبرها را یک‌به‌یک برمی‌گرداند.
+    def docs(self: "PnSummaryReader") -> Iterator[tuple[str, str, str, str, str, list[str], str, str]]:
+        """Yields news articles one by one.
 
         Examples:
             >>> pn_summary = PnSummaryReader("pn-summary", "test")
@@ -38,7 +45,7 @@ class PnSummaryReader:
             )
 
         Yields:
-           خبر بعدی در قالب `(شناسه, عنوان, متن خبر ,خلاصهٔ خبر, موضوع خبر به انگلیسی, [موضوع ۱ به فارسی، موضوع ۲ به فارسی، ...], منبع, لینک)`
+           The next news entry in the format `(id, title, article, summary, category_en, [category_fa1, category_fa2, ...], source, link)`.
         """
         for file_path in self._file_paths:
                 with Path(file_path).open("r", encoding="utf-8") as file:

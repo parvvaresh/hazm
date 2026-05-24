@@ -1,27 +1,23 @@
-"""این ماژول شامل کلاس‌ها و توابعی برای تجزیه توکن به دو توکن کوچکتر است."""
+"""This module includes classes and functions for splitting a token into two smaller tokens."""
 
-
-from typing import List
-from typing import Tuple
-
-from hazm import Lemmatizer
+from hazm.lemmatizer import Lemmatizer
 
 
 class TokenSplitter:
-    """این کلاس شامل توابعی برای تجزیه توکن به دو توکن کوچکتر است."""
+    """This class includes methods for splitting a token into two smaller tokens."""
 
     def __init__(self: "TokenSplitter") -> None:
+        """Initializes the TokenSplitter and loads the necessary lemmatizer data."""
         self.lemmatizer = Lemmatizer()
         self.lemmatize = self.lemmatizer.lemmatize
         self.words = self.lemmatizer.words
 
-    def split_token_words(self: "TokenSplitter", token: str) -> List[Tuple[str, str]]:
-        """توکنِ ورودی را به دو توکن کوچکتر تجزیه می‌کند.
+    def split_token_words(self: "TokenSplitter", token: str) -> list[tuple[str, str]]:
+        """Splits the input token into two smaller tokens.
 
-        اگر توکن به بیش از یک روش قابل تجزیه باشد همهٔ حالت‌های ممکن را
-        برمی‌گرداند؛ مثلاً «داستان‌سرا» هم می‌توان به `['داستان', 'سرا']` تجزیه
-        شود و هم می‌تواند به `['داستان‌سرا',]` شکسته شود؛ پس هر دو را
-        برمی‌گرداند: `[('داستان', 'سرا'), ('داستان‌سرا',)]`.
+        If the token can be split in more than one way, it returns all possible states;
+        for example, 'داستان‌سرا' can be split into both `['داستان', 'سرا']` and
+        `['داستان‌سرا']`, so it returns both: `[('داستان', 'سرا'), ('داستان‌سرا',)]`.
 
         Examples:
             >>> splitter = TokenSplitter()
@@ -35,11 +31,10 @@ class TokenSplitter:
             [('دستان', 'سرا')]
 
         Args:
-            token: توکنی که باید پردازش شود.
+            token: The token to be processed.
 
         Returns:
-            <dir-rtl>لیستی از `[(توکن, توکن), (توکن, توکن), …]`ها.</dir-rtl>
-
+            A list of tuples, each containing the split parts of the token.
         """
         # >>> splitter.split_token_words('شهرموشها')
 

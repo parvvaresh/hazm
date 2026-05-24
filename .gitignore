@@ -150,8 +150,6 @@ cython_debug/
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Python,VisualStudioCode
 
-poetry.lock
-
 sample.py
 
 # ipynb files 
@@ -167,3 +165,9 @@ wiki.bz2
 .python-version
 
 .vscode
+
+yek.yaml
+draft.py
+
+repomix-output.xml
+.repomixignore

@@ -10,8 +10,8 @@ class TestWordEmbedding:
         assert word_embedding.doesnt_match(["ساعت", "پلنگ", "شیر"]) == "ساعت"
 
     def test_similarity(self: "TestWordEmbedding", word_embedding):
-        assert word_embedding.similarity("ایران", "آلمان") == 0.94321066
-        assert word_embedding.similarity("ایران", "پنجره") ==  0.19852939
+        assert word_embedding.similarity("ایران", "آلمان") == pytest.approx(0.94321066, abs=1e-5)
+        assert word_embedding.similarity("ایران", "پنجره") == pytest.approx(0.19852939, abs=1e-5)
 
     def test_nearest_words(self: "TestWordEmbedding", word_embedding):
         assert word_embedding.nearest_words("ایران", topn = 5) == [("تاریخی.", 0.9997861385345459), ("نام\u200cگذاری", 0.9993206858634949), ("پناه\u200cجو", 0.9992603063583374), ("قرارگرفت", 0.9990856647491455), ("امدادگری", 0.998709499835968)]

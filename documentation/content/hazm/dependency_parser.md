@@ -1,6 +1,6 @@
 !!! Note ""
 
-    دقت تجزیه‌گر عمقی در نسخهٔ حاضر {{dependency_parser_evaluation_value | to_persian_numeral}} درصد است. 
+    The accuracy of the dependency parser in the current version is {{dependency_parser_evaluation_value}}%.
 
 ::: hazm.dependency_parser
     handler: python
@@ -8,5 +8,6 @@
         members:
             - DependencyParser
             - MaltParser
+            - SpacyDependencyParser
         show_root_heading: false
         show_source: false

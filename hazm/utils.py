@@ -1,35 +1,49 @@
-"""این ماژول شامل کلاس‌ها و توابع کمکی است."""
-
+import importlib.resources
 import re
-from os import path
+import sys
 from pathlib import Path
 from typing import Any
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Tuple
 
-data_path = Path(__file__).parent / "data"
 
-default_words = Path(data_path) / "words.dat"
-default_stopwords = Path(data_path) / "stopwords.dat"
-default_verbs = Path(data_path) / "verbs.dat"
-informal_words = Path(data_path) / "iwords.dat"
-informal_verbs = Path(data_path) / "iverbs.dat"
-abbreviations = Path(data_path) / "abbreviations.dat"
+def get_data_path(filename: str) -> Path:
+    """Returns the data file path in a zip-safe manner.
+
+    Args:
+        filename: The name of the data file.
+
+    Returns:
+        The path to the specified data file.
+    """
+    return importlib.resources.files("hazm") / "data" / filename
+
+default_words = get_data_path("words.dat")
+default_stopwords = get_data_path("stopwords.dat")
+default_verbs = get_data_path("verbs.dat")
+informal_words = get_data_path("iwords.dat")
+informal_verbs = get_data_path("iverbs.dat")
+abbreviations = get_data_path("abbreviations.dat")
 
 NUMBERS = "۰۱۲۳۴۵۶۷۸۹"
 
+def maketrans(a: str, b: str) -> dict[int, Any]:
+    """Maps each character in string `a` to the corresponding character in string `b`.
 
-def maketrans(a: str, b: str) -> Dict[int, Any]:
-    """هر یک از حروف رشتهٔ a را به یک حرف در رشتهٔ b مپ می‌کند."""
-    return {ord(a): b for a, b in zip(a, b)}
+    Examples:
+        >>> table = maketrans('012', '۰۱۲')
+        >>> '012'.translate(table)
+        '۰۱۲'
 
+    Args:
+        a: A string of characters to be replaced.
+        b: A string of characters to replace with.
 
-def words_list(
-    words_file: str = default_words,
-) -> List[Tuple[str, int, Tuple[str]]]:
-    """لیست کلمات را برمی‌گرداند.
+    Returns:
+        A dictionary mapping character ordinals to their replacements.
+    """
+    return {ord(a): b for a, b in zip(a, b, strict=False)}
+
+def words_list(words_file: str | Path = default_words) -> list[tuple[str, int, tuple[str, ...]]]:
+    """Returns a list of words from the specified file.
 
     Examples:
         >>> from hazm.utils import words_list
@@ -37,23 +51,23 @@ def words_list(
         ('آب', 549005877, ('N', 'AJ'))
 
     Args:
-        words_file: مسیر فایل حاوی کلمات.
+        words_file: Path to the words file. Defaults to `default_words`.
 
     Returns:
-        فهرست کلمات.
-
+        A list of tuples, each containing (word, count, categories).
     """
-    with Path.open(words_file, encoding="utf-8") as words_file:
-        items = [line.strip().split("\t") for line in words_file]
+    file_path = Path(words_file) if isinstance(words_file, str) else words_file
+
+    with file_path.open(encoding="utf-8") as file:
+        items = [line.strip().split("\t") for line in file]
         return [
             (item[0], int(item[1]), tuple(item[2].split(",")))
             for item in items
             if len(item) == 3
         ]
 
-
-def stopwords_list(stopwords_file: str = default_stopwords) -> List[str]:
-    """لیست ایست‌واژه‌ها را برمی‌گرداند.
+def stopwords_list(stopwords_file: str | Path = default_stopwords) -> list[str]:
+    """Returns a sorted list of stopwords.
 
     Examples:
         >>> from hazm.utils import stopwords_list
@@ -61,50 +75,83 @@ def stopwords_list(stopwords_file: str = default_stopwords) -> List[str]:
         ['آخرین', 'آقای', 'آمد', 'آمده']
 
     Args:
-        stopwords_file: مسیر فایل حاوی ایست‌واژه‌ها.
+        stopwords_file: Path to the stopwords file. Defaults to `default_stopwords`.
 
     Returns:
-        فهرست ایست‌واژه‌ها.
-
+        A sorted list of unique stopwords.
     """
-    with Path.open(stopwords_file, encoding="utf8") as stopwords_file:
-        return sorted({w.strip() for w in stopwords_file})
+    file_path = Path(stopwords_file) if isinstance(stopwords_file, str) else stopwords_file
 
+    with file_path.open(encoding="utf-8") as file:
+        return sorted({w.strip() for w in file})
 
-def verbs_list() -> List[str]:
-    """لیست افعال را برمی‌گرداند."""
-    with Path.open(default_verbs, encoding="utf8") as verbs_file:
-        lst = []
-        for line in verbs_file:
-            lst.append(line.strip())
-        return lst
+def verbs_list() -> list[str]:
+    """Returns a list of verbs from the default verbs file.
 
+    Examples:
+        >>> from hazm.utils import verbs_list
+        >>> verbs_list()[:2]
+        ['آباد#آباد', 'آزمای#آزمود']
+
+    Returns:
+        A list of verbs.
+    """
+    with default_verbs.open(encoding="utf-8") as verbs_file:
+        return [line.strip() for line in verbs_file]
 
 def past_roots() -> str:
-    """لیست بن‌های گذشته را برمی‌گرداند."""
-    roots = ""
+    """Returns a string of past roots joined by a pipe character.
+
+    Examples:
+        >>> from hazm.utils import past_roots
+        >>> past_roots()[:20]
+        'آباد|آزمود|آسود|آشفت'
+
+    Returns:
+        A string containing all past roots, suitable for use in regex.
+    """
+    roots = []
     for verb in verbs_list():
         split = verb.split("#")
-        roots += split[0] + "|"
-
-    return roots[:-1]
-
+        roots.append(split[0])
+    return "|".join(roots)
 
 def present_roots() -> str:
-    """لیست بن‌های مضارع را برمی‌گرداند."""
-    roots = ""
+    """Returns a string of present roots joined by a pipe character.
+
+    Examples:
+        >>> from hazm.utils import present_roots
+        >>> present_roots()[:20]
+        'آباد|آزمای|آسای|آشوب'
+
+    Returns:
+        A string containing all present roots, suitable for use in regex.
+    """
+    roots = []
     for verb in verbs_list():
         split = verb.split("#")
-        roots += split[1] + "|"
+        roots.append(split[1])
+    return "|".join(roots)
 
-    return roots[:-1]
+def regex_replace(patterns: list[tuple[str, str]], text: str) -> str:
+    """Finds regex patterns and replaces them with the given text.
 
+    Examples:
+        >>> from hazm.utils import regex_replace
+        >>> patterns = [(r'apples', 'oranges'), (r'red', 'blue')]
+        >>> regex_replace(patterns, 'red apples')
+        'blue oranges'
 
-def regex_replace(patterns: str, text: str) -> str:
-    """الگوی ریجکس را یافته و با متن داده شده جایگزین می‌کند."""
-    compiled_patterns = [(re.compile(pattern), repl) for pattern, repl in patterns]    
+    Args:
+        patterns: A list of tuples, each containing (pattern, replacement).
+        text: The input text to be processed.
 
-    for pattern, repl in compiled_patterns:
-        text = pattern.sub(repl, text)
-    
+    Returns:
+        The modified text after all replacements.
+    """
+    for pattern, repl in patterns:
+        if isinstance(pattern, str):
+            text = re.sub(pattern, repl, text)
+        else:
+            text = pattern.sub(repl, text)
     return text

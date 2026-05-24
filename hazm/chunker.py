@@ -1,59 +1,66 @@
-# ruff: noqa: EXE002
-"""این ماژول شامل کلاس‌ها و توابعی برای تجزیهٔ متن به عبارات اسمی، فعلی و حرف است."""
+# hazm/chunker.py
+"""This module contains classes and functions for shallow parsing (chunking) of text into noun, verb, and prepositional phrases."""
 
-from typing import Dict
-from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Tuple
-from typing import Union
+import logging
+import subprocess
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
 
 from nltk.chunk import RegexpParser
 from nltk.chunk import conlltags2tree
 from nltk.chunk import tree2conlltags
 from nltk.chunk.util import ChunkScore
+from nltk.tree import Tree
 
-from hazm import IOBTagger
-from hazm import POSTagger
+try:
+    import spacy
+    from spacy.tokens import Doc
+    from spacy.tokens import DocBin
+    from spacy.vocab import Vocab
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    Doc = DocBin = Vocab = Any
+
+from tqdm import tqdm
+
+from hazm.pos_tagger import POSTagger
+from hazm.sequence_tagger import IOBTagger
+from hazm.types import ChunkedSentence
+from hazm.types import Sentence
+from hazm.types import TaggedSentence
+from hazm.types import Token
+
+logger = logging.getLogger(__name__)
 
 
-
-
-
-def tree2brackets(tree: str) -> str:
-    """خروجی درختی تابع [parse()][hazm.chunker.Chunker.parse] را به یک ساختار
-    کروشه‌ای تبدیل می‌کند.
+def tree2brackets(tree: Tree) -> str:
+    """Converts a tree object to a bracketed string representation.
 
     Examples:
-        >>> chunker = Chunker(model='chunker.model')
-        >>> tree=chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
-        >>> print(tree)
-        (S
-          (NP نامه/NOUN,EZ ایشان/PRON)
-          (POSTP را/ADP)
-          (VP دریافت/NOUN داشتم/VERB)
-          ./PUNCT)
-
+        >>> chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
+        >>> tree = chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
         >>> tree2brackets(tree)
         '[نامه ایشان NP] [را POSTP] [دریافت داشتم VP] .'
 
     Args:
-        tree: ساختار درختی حاصل از پردزاش تابع parse()
+        tree: The parse tree to be converted.
 
     Returns:
-        رشته‌ای از کروشه‌ها که در هر کروشه جزئی از متن به همراه نوع آن جای گرفته است.
-
+        A bracketed string representation of the tree.
     """
     s, tag = "", ""
     for item in tree2conlltags(tree):
-        if item[2][0] in {"B", "O"} and tag:
+        word, _, chunk = item
+        if chunk[0] in {"B", "O"} and tag:
             s += tag + "] "
             tag = ""
 
-        if item[2][0] == "B":
-            tag = item[2].split("-")[1]
+        if chunk[0] == "B":
+            tag = chunk.split("-")[1]
             s += "["
-        s += item[0] + " "
+        s += word + " "
 
     if tag:
         s += tag + "] "
@@ -62,35 +69,62 @@ def tree2brackets(tree: str) -> str:
 
 
 class Chunker(IOBTagger):
-    """این کلاس شامل توابعی برای تقطیع متن، آموزش و ارزیابی مدل است."""
+    """Class for chunking text, training, and evaluating chunker models."""
 
     def __init__(
-        self: "Chunker",
-        model: Optional[str] = None,
-        data_maker: Optional[List[List[Dict]]] = None,
+        self,
+        model: str | Path | None = None,
+        data_maker: Any = None,
+        repo_id: str | None = None,
+        model_filename: str | None = None,
     ) -> None:
-        """constructor."""
-        data_maker = self.data_maker if data_maker is None else data_maker
-        self.posTagger = POSTagger()
-        super().__init__(model, data_maker)
-
-    def data_maker(
-        self: "Chunker",
-        tokens: List[List[Tuple[str, str]]],
-    ) -> List[List[Dict]]:
-        """تابعی که لیستی دو بعدی از کلمات به همراه لیبل را گرفته و لیست دو بعدی از از دیکشنری‌هایی که تعیین‌کننده ویژگی‌ها هر کلمه هستند را برمی‌گرداند.
+        """Constructor.
 
         Examples:
-            >>> chunker = Chunker(model = 'chunker.model')
-            >>> chunker.data_maker(tokens = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]])
-            [[{'word': 'من', 'is_first': True, 'is_last': False, 'prefix-1': 'م', 'prefix-2': 'من', 'prefix-3': 'من', 'suffix-1': 'ن', 'suffix-2': 'من', 'suffix-3': 'من', 'prev_word': '', 'two_prev_word': '', 'next_word': 'به', 'two_next_word': 'مدرسه', 'is_numeric': False, 'prev_is_numeric': '', 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': '', 'next_is_punc': False, 'pos': 'PRON', 'prev_pos': '', 'next_pos': 'ADP'}, {'word': 'به', 'is_first': False, 'is_last': False, 'prefix-1': 'ب', 'prefix-2': 'به', 'prefix-3': 'به', 'suffix-1': 'ه', 'suffix-2': 'به', 'suffix-3': 'به', 'prev_word': 'من', 'two_prev_word': '.', 'next_word': 'مدرسه', 'two_next_word': 'ایران', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': False, 'pos': 'ADP', 'prev_pos': 'PRON', 'next_pos': 'NOUN,EZ'}, {'word': 'مدرسه', 'is_first': False, 'is_last': False, 'prefix-1': 'م', 'prefix-2': 'مد', 'prefix-3': 'مدر', 'suffix-1': 'ه', 'suffix-2': 'سه', 'suffix-3': 'رسه', 'prev_word': 'به', 'two_prev_word': 'من', 'next_word': 'ایران', 'two_next_word': 'رفته_بودم', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': False, 'pos': 'NOUN,EZ', 'prev_pos': 'ADP', 'next_pos': 'NOUN'}, {'word': 'ایران', 'is_first': False, 'is_last': False, 'prefix-1': 'ا', 'prefix-2': 'ای', 'prefix-3': 'ایر', 'suffix-1': 'ن', 'suffix-2': 'ان', 'suffix-3': 'ران', 'prev_word': 'مدرسه', 'two_prev_word': 'به', 'next_word': 'رفته_بودم', 'two_next_word': '.', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': False, 'pos': 'NOUN', 'prev_pos': 'NOUN,EZ', 'next_pos': 'VERB'}, {'word': 'رفته_بودم', 'is_first': False, 'is_last': False, 'prefix-1': 'ر', 'prefix-2': 'رف', 'prefix-3': 'رفت', 'suffix-1': 'م', 'suffix-2': 'دم', 'suffix-3': 'ودم', 'prev_word': 'ایران', 'two_prev_word': 'مدرسه', 'next_word': '.', 'two_next_word': '', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': False, 'is_punc': False, 'prev_is_punc': False, 'next_is_punc': True, 'pos': 'VERB', 'prev_pos': 'NOUN', 'next_pos': 'PUNCT'}, {'word': '.', 'is_first': False, 'is_last': True, 'prefix-1': '.', 'prefix-2': '.', 'prefix-3': '.', 'suffix-1': '.', 'suffix-2': '.', 'suffix-3': '.', 'prev_word': 'رفته_بودم', 'two_prev_word': 'ایران', 'next_word': '', 'two_next_word': '', 'is_numeric': False, 'prev_is_numeric': False, 'next_is_numeric': '', 'is_punc': True, 'prev_is_punc': False, 'next_is_punc': '', 'pos': 'PUNCT', 'prev_pos': 'VERB', 'next_pos': ''}]]
+            >>> # Loading from Hugging Face Hub
+            >>> chunker = Chunker(repo_id="roshan-research/hazm-chunker", model_filename="chunker.model")
+            >>> # Loading from a local model file
+            >>> # chunker = Chunker(model='resources/chunker.model')
 
         Args:
-            tokens: جملاتی که نیاز به تبدیل آن به برداری از ویژگی‌ها است.
+            model: Path to the local model file.
+            data_maker: Custom data maker function.
+            repo_id: Hugging Face repository ID (e.g., "roshan-research/hazm-chunker").
+            model_filename: Filename inside the repository (e.g., "chunker.model").
+        """
+        final_data_maker = data_maker if data_maker is not None else self.data_maker
+        self.posTagger = POSTagger()
+
+        # Resolve model path logic
+        final_model_path = model
+
+        if repo_id and model_filename:
+            try:
+                from huggingface_hub import hf_hub_download
+                final_model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
+            except Exception as e:
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
+
+        super().__init__(final_model_path, final_data_maker)
+
+    def data_maker(self, tokens: list[TaggedSentence]) -> list[list[dict[str, Any]]]:
+        """Converts tokens into features.
+
+        Examples:
+            >>> tokens = [[('من', 'PRON'), ('به', 'ADP'), ('مدرسه', 'NOUN,EZ'), ('ایران', 'NOUN'), ('رفته_بودم', 'VERB'), ('.', 'PUNCT')]]
+            >>> features = chunker.data_maker(tokens)
+            >>> features[0][0]['pos']
+            'PRON'
+
+        Args:
+            tokens: A list of tagged sentences.
 
         Returns:
-            لیستی از لیستی از دیکشنری‌های بیان‌کننده ویژگی‌های یک کلمه.
-
+            A list of lists of feature dictionaries.
         """
         words = [[word for word, _ in token] for token in tokens]
         tags = [[tag for _, tag in token] for token in tokens]
@@ -99,16 +133,25 @@ class Chunker(IOBTagger):
                 self.features(words=word_tokens, pos_tags=tag_tokens, index=index)
                 for index in range(len(word_tokens))
             ]
-            for word_tokens, tag_tokens in zip(words, tags)
+            for word_tokens, tag_tokens in zip(words, tags, strict=False)
         ]
 
     def features(
-        self: "Chunker",
-        words: List[str],
-        pos_tags: List[str],
+        self,
+        words: list[str],
+        pos_tags: list[str],
         index: int,
-    ) -> Dict[str, Union[str, bool]]:
-        """ویژگی‌های کلمه را برمی‌گرداند."""
+    ) -> dict[str, Any]:
+        """Extracts features for a word at a given index.
+
+        Args:
+            words: List of words in the sentence.
+            pos_tags: List of POS tags for the words.
+            index: The index of the word to extract features for.
+
+        Returns:
+            A dictionary of features.
+        """
         word_features = self.posTagger.features(words, index)
         word_features.update(
             {
@@ -120,8 +163,8 @@ class Chunker(IOBTagger):
         return word_features
 
     def train(
-        self: "Chunker",
-        trees: List[str],
+        self,
+        trees: list[Tree],
         c1: float = 0.4,
         c2: float = 0.04,
         max_iteration: int = 400,
@@ -129,20 +172,20 @@ class Chunker(IOBTagger):
         file_name: str = "chunker_crf.model",
         report_duration: bool = True,
     ) -> None:
-        """از روی درخت ورودی، مدل را آموزش می‌دهد.
+        """Trains the chunker model.
 
         Args:
-            trees: لیستی از درخت‌ها برای آموزش مدل.
-            c1: مقدار L1 regularization.
-            c2: مقدار L2 regularization.
-            max_iteration: تعداد تکرار آموزش بر کل دیتا.
-            verbose: نمایش اطلاعات مربوط به آموزش.
-            file_name: نام و مسیر فایلی که می‌خواهید مدل در آن ذخیره شود.
-            report_duration: نمایش گزارشات مربوط به زمان.
-
+            trees: A list of parse trees for training.
+            c1: Coefficient for L1 regularization.
+            c2: Coefficient for L2 regularization.
+            max_iteration: Maximum number of iterations for training.
+            verbose: Whether to print verbose output.
+            file_name: The name of the file to save the trained model.
+            report_duration: Whether to report the training duration.
         """
+        tagged_list = [tree2conlltags(tree) for tree in trees]
         return super().train(
-            [tree2conlltags(tree) for tree in trees],
+            tagged_list,
             c1,
             c2,
             max_iteration,
@@ -151,13 +194,11 @@ class Chunker(IOBTagger):
             report_duration,
         )
 
-    def parse(self: "Chunker", sentence: List[Tuple[str, str]]) -> str:
-        """جمله‌ای را در قالب لیستی از تاپل‌های دوتایی [(توکن, نوع), (توکن, نوع), ...]
-        دریافت می‌کند و درخت تقطع‌شدهٔ آن را بر می‌گرداند.
+    def parse(self, sentence: TaggedSentence) -> Tree:
+        """Parses a tagged sentence into a chunk tree.
 
         Examples:
-            >>> chunker = Chunker(model = 'chunker.model')
-            >>> tree = chunker.parse(sentence = [('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
+            >>> tree = chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
             >>> print(tree)
             (S
               (NP نامه/NOUN,EZ ایشان/PRON)
@@ -166,65 +207,54 @@ class Chunker(IOBTagger):
               ./PUNCT)
 
         Args:
-            sentence: جمله‌ای که باید درخت تقطیع‌شدهٔ آن تولید شود.
+            sentence: A tagged sentence.
 
         Returns:
-            ساختار درختی حاصل از تقطیع.
-            برای تبدیل این ساختار درختی به یک ساختار کروشه‌ای و قابل‌درک‌تر
-            می‌توانید از تابع `tree2brackets()` استفاده کنید.
-
+            The parsed chunk tree.
         """
-        return conlltags2tree(super().tag(sentence))
+        tagged = super().tag(sentence)
+        return conlltags2tree(tagged)
 
-    def parse_sents(
-        self: "Chunker",
-        sentences: List[List[Tuple[str, str]]],
-    ) -> Iterator[str]:
-        """جملات ورودی را به‌شکل تقطیع‌شده و در قالب یک برمی‌گرداند.
+    def parse_sents(self, sentences: list[TaggedSentence]) -> Iterator[Tree]:
+        """Parses a list of tagged sentences into chunk trees.
+
+        Examples:
+            >>> sentences = [[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON')], [('من', 'PRON'), ('رفتم', 'VERB')]]
+            >>> trees = list(chunker.parse_sents(sentences))
 
         Args:
-            sentences: جملات ورودی.
+            sentences: A list of tagged sentences.
 
         Yields:
-            یک `Iterator` از جملات تقطیع شده.
-
+            The parsed chunk tree for each sentence.
         """
         for conlltagged in super().tag_sents(sentences):
             yield conlltags2tree(conlltagged)
 
-    def evaluate(self: "Chunker", trees: List[str]) -> float:
-        """داده صحیح دریافت شده را با استفاده از مدل لیبل می‌زند و دقت مدل را برمی‌گرداند.
+    def evaluate(self, trees: list[Tree]) -> float:
+        """Evaluates the accuracy of the chunker.
 
         Examples:
-            >>> chunker = Chunker(model = 'chunker.model')
-            >>> trees = list(chunker.parse_sents([[('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')]]))
+            >>> trees = [chunker.parse([('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])]
             >>> chunker.evaluate(trees)
             1.0
 
         Args:
-            trees: لیست درختانی که با استفاده از آن مدل را ارزیابی می‌کنیم.
+            trees: A list of gold standard parse trees.
 
         Returns:
-            دقت مدل
-
+            The accuracy of the chunker.
         """
-        return super().evaluate([tree2conlltags(tree) for tree in trees])
+        tagged_sents = [tree2conlltags(tree) for tree in trees]
+        return super().evaluate(tagged_sents)
 
 
 class RuleBasedChunker(RegexpParser):
-    """کلاس RuleBasedChunker.
+    """Rule-based chunker using regular expressions."""
 
-
-    Examples:
-    >>> chunker = RuleBasedChunker()
-    >>> tree2brackets(chunker.parse([('نامه', 'Ne'), ('۱۰', 'NUMe'), ('فوریه', 'Ne'), ('شما', 'PRO'), ('را', 'POSTP'), ('دریافت', 'N'), ('داشتم', 'V'), ('.', 'PUNC')]))
-    '[نامه ۱۰ فوریه شما NP] [را POSTP] [دریافت داشتم VP] .'
-
-    """
-
-    def __init__(self: "RuleBasedChunker") -> None:
+    def __init__(self) -> None:
+        """Constructor."""
         grammar = r"""
-
             NP:
                 <P>{<N>}<V>
 
@@ -250,350 +280,266 @@ class RuleBasedChunker(RegexpParser):
 
             PP:
                 {<Pe?>+}
-
         """
-
         super().__init__(grammar=grammar)
 
 
 class SpacyChunker(Chunker):
+    """Chunker based on the Spacy library."""
+
     def __init__(
-            self: "SpacyChunker",
-            model_path=None,
-            using_gpu=None,
-            gpu_id=0
-        ):
-        import os
-        import subprocess
-        import spacy
-
-        from spacy.tokens import Doc
-        from spacy.tokens import DocBin
-        from spacy.vocab import Vocab
-
-        from sklearn.metrics import classification_report,f1_score,accuracy_score,precision_score,recall_score
-
-        from tqdm import tqdm
-
-
-        """
-        Initialize the SpacyChunker with data and model paths.
+        self,
+        model_path: str | Path | None = None,
+        using_gpu: bool = False,
+        gpu_id: int = 0,
+        repo_id: str | None = None,
+    ) -> None:
+        """Constructor.
 
         Args:
-        - model_path: Path to a pre-trained spaCy model.
-        - using_gpu: Flag indicating whether to use GPU for processing.
-        - gpu_id: id of gpu core that you want to train or evaluate model on it
-
-        This constructor initializes the SpacyChunker and performs the initial setup.
+            model_path: Path to the local Spacy model.
+            using_gpu: Whether to use GPU.
+            gpu_id: The ID of the GPU to use.
+            repo_id: Hugging Face repository ID.
         """
+        if not SPACY_AVAILABLE:
+            msg = "To use Spacy-based models, please install hazm: pip install hazm[all]"
+            raise ImportError(msg)
+
         super().__init__()
-        self.model_path = model_path
+        self.model_path = str(model_path) if model_path else None
         self.using_gpu = using_gpu
         self.gpu_id = gpu_id
         self.model = None
-        self._setup()
+        self.gpu_availability = False
 
-    # Edit : این تابع داخلی هست و بهتر هست با _ شروع شود
+        if repo_id:
+            try:
+                from huggingface_hub import snapshot_download
+                self.model_path = snapshot_download(repo_id=repo_id)
+            except ImportError as e:
+                msg = "Please install `huggingface-hub` to use pretrained models from Hub."
+                raise ImportError(msg) from e
+            except Exception as e:
+                msg = f"Failed to download model from {repo_id}: {e}"
+                raise ValueError(msg) from e
 
-    def _setup(self: "SpacyChunker"):
-        """
-        Set up the configuration for the spaCy model, including GPU settings.
+        self.peykare_dict: dict[str, list[str]] = {}
 
-        This function initializes and configures the spaCy model and data for training and evaluation.
-        It ensures that GPU usage is appropriately configured if specified.
+        if self.model_path:
+            self._setup()
 
-        Args:
-        - target_dataset_for_evaluation: The dataset type to use for evaluation, either 'dev' or 'test'.
 
-        This setup function is a crucial part of preparing the SpacyChunker for training and evaluation.
-        """
-        self._setup_gpu()
-
-    def _setup_gpu(self: "SpacyChunker"):
-        """
-        Check GPU availability and configure spaCy to use it if possible.
-
-        This method checks whether a GPU is available and, if so, configures spaCy to utilize it for improved processing speed.
-        The GPU availability is determined based on the 'using_gpu' flag.
-
-        This check is performed during setup to make use of available GPU resources for enhanced performance.
-        """
-        print("------------------ GPU Setup Process Started ---------------------")
+    def _setup(self) -> None:
         if self.using_gpu:
-            gpu_available = spacy.prefer_gpu(self.gpu_id)
-            if gpu_available: 
-                print("------------ GPU is available and ready for use -------------")
-                spacy.require_gpu(self.gpu_id)
-                self.gpu_availability = True
-            else:
-                print("------------ GPU is not available; spaCy will use CPU -------------")
-                self.gpu_availability = False
-
-    def _setup_model(self: "SpacyChunker",sents):
-        """
-        Load and configure the spaCy model for a specific dataset type.
-
-        This function loads a pre-trained spaCy model and configures it for a specific dataset type ('train', 'dev', or 'test').
-
-        Args:
-        - sents : List[List[str]] contain each sentence tokens in a separate list.All lists are in one major list
-
-        The model setup process is essential for training and evaluation on the chosen dataset type.
-        """
-        self.peykare_dict = {}
-        self.model = spacy.load(self.model_path)
-        self._setup_dictionary(sents)
-        self.model.tokenizer = self._custom_tokenizer
-    
-    def _custom_tokenizer(self,text):
-        """
-        Custom tokenizer for spaCy.
-
-        Args:
-            - text: Input text to be tokenized.
-
-        Returns:
-            - Doc: SpaCy Doc object representing the tokenized text.
-        """
-        if text in self.peykare_dict:
-            return Doc(self.model.vocab, self.peykare_dict[text])
+            self._setup_gpu()
         else:
-            raise ValueError('No tokenization available for input.')
-        
-    def _setup_dictionary(self:"SpacyChunker",sents):
-        """
-        Set up a dictionary for custom tokenization.
+            logger.info("Using CPU for SpacyChunker.")
+
+        if self.model_path and Path(self.model_path).exists():
+             self.model = spacy.load(self.model_path)
+             self.model.tokenizer = self._custom_tokenizer
+
+    def _setup_gpu(self) -> None:
+        logger.info("GPU Setup Process Started...")
+        if spacy.prefer_gpu(self.gpu_id):
+            logger.info("GPU is available and ready for use.")
+            spacy.require_gpu(self.gpu_id)
+            self.gpu_availability = True
+        else:
+            logger.warning("GPU is not available; spaCy will use CPU.")
+            self.gpu_availability = False
+
+    def _custom_tokenizer(self, text: str) -> Doc:
+        if self.model and text in self.peykare_dict:
+            return Doc(self.model.vocab, self.peykare_dict[text])
+        msg = "No tokenization available for input."
+        raise ValueError(msg)
+
+    def _update_dictionary(self, sents: list[list[str]]) -> None:
+        """Adds sentences to the dictionary for custom tokenization.
 
         Args:
-            - sents: List of sentences, each represented as a list of words.
-
-        This dictionary is used for custom tokenization in the spaCy model.
-        """
-        for item in sents:
-            self.peykare_dict[' '.join([w for w in item])] = [w for w in item]
-
-    def _add_to_dict(self: "SpacyChunker", sents):
-        """
-            Add the sentences to dictianory if it doesnt exist already
+            sents: A list of sentences, where each sentence is a list of words.
         """
         for sent in sents:
-            key = ' '.join(sent)
+            key = " ".join(sent)
             if key not in self.peykare_dict:
                 self.peykare_dict[key] = sent
 
-
-    def _setup_dataset(self: "SpacyChunker",sents,saved_directory,dataset_type):
-        """
-        Set up spaCy DocBin dataset for training.
-
-        Args:
-            - sents: List of sentences, each represented as a list of (word, tag) tuples.
-            - saved_directory: Directory to save the spaCy dataset.
-            - dataset_type: Type of the dataset ('train', 'dev', or 'test').
-
-        This function prepares the dataset in spaCy format and saves it to disk.
-        """
-
-        assert dataset_type in ['train','dev','test']
+    def _setup_dataset(
+        self,
+        sents: list[ChunkedSentence],
+        saved_directory: str,
+        dataset_type: str,
+    ) -> None:
+        assert dataset_type in ["train", "dev", "test"]
         db = DocBin()
         for sent in tqdm(sents):
             words = [word[0] for word in sent]
-            tags = [word[2] for word in sent]
-            doc = Doc(Vocab(strings=words), words = words)
-            for d, tag in zip(doc, tags):
+            tags = [word[2] for word in sent] # Chunk tags
+            # Note: Spacy usually expects POS tags in tag_ and NER/Chunk in ents or specific attributes.
+            # Here we map chunk tags to tag_ attribute as per original code logic for simplicity,
+            # though standard way is using ents for chunks.
+            doc = Doc(Vocab(strings=words), words=words)
+            for d, tag in zip(doc, tags, strict=False):
                 d.tag_ = tag
             db.add(doc)
-        db.to_disk(f'{saved_directory}/{dataset_type}.spacy')
-        
+
+        path = Path(saved_directory)
+        if not path.exists():
+            path.mkdir(parents=True)
+
+        db.to_disk(f"{saved_directory}/{dataset_type}.spacy")
 
     def train(
-            self: "SpacyChunker",
-            train_dataset,
-            test_dataset,
-            data_directory,
-            base_config_file,
-            train_config_path,
-            output_dir,
-            use_direct_config=False        
-        ):
-        """
-        Train the spaCy chunker model.
+        self,
+        train_dataset: list[ChunkedSentence],
+        test_dataset: list[ChunkedSentence],
+        data_directory: str,
+        base_config_file: str,
+        train_config_path: str,
+        output_dir: str,
+        use_direct_config: bool = False,
+    ) -> None:
+        """Trains the spaCy chunker model.
 
         Args:
-            - train_dataset: Training dataset, each sentence represented as a list of (word, tag) tuples.
-            - test_dataset: Testing dataset, each sentence represented as a list of (word, tag) tuples.
-            - data_directory: Directory to save the spaCy datasets.
-            - base_config_file: Path to the base configuration file.
-            - train_config_path: Path to the training configuration file.
-            - output_dir: Directory to save the trained model.
-            - use_direct_config: Boolean indicating whether to use a directly provided config file.
-
-        This function trains the spaCy chunker model and sets up the model for prediction.
+            train_dataset: The training dataset.
+            test_dataset: The testing dataset.
+            data_directory: Directory to save processed data.
+            base_config_file: Path to the base configuration file.
+            train_config_path: Path to the training configuration file.
+            output_dir: Directory to save the trained model.
+            use_direct_config: Whether to use the configuration file directly.
         """
-        if use_direct_config == False:
-            self._setup_train_config(
-                base_config=base_config_file,
-                train_config_path=train_config_path
+        if not use_direct_config:
+            logger.info("Setting up training configuration...")
+            self.train_config_file = train_config_path
+            subprocess.run(
+                f"python -m spacy init fill-config {base_config_file} {train_config_path}",
+                check=False,
+                shell=True,
             )
         else:
             self.train_config_file = train_config_path
 
-        self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        if train_dataset:
+            self._setup_dataset(
+                sents=train_dataset,
+                saved_directory=data_directory,
+                dataset_type="train",
+            )
 
-        if self.train_dataset:
-            # Set up the training dataset configuration
-            self._setup_dataset(sents=self.train_dataset,saved_directory=data_directory, dataset_type='train')
+        if test_dataset:
+            self._setup_dataset(
+                sents=test_dataset,
+                saved_directory=data_directory,
+                dataset_type="test",
+            )
 
-        if self.test_dataset:
-            self._setup_dataset(sents=self.test_dataset,saved_directory=data_directory,dataset_type='test')
+        train_data = f"{data_directory}/train.spacy"
+        test_data = f"{data_directory}/test.spacy"
 
-        train_data = f'{data_directory}/train.spacy'
-        test_data = f'{data_directory}/test.spacy'
-
-        command = f"python -m spacy train {self.train_config_file} --output ./{output_dir} --paths.train ./{train_data} --paths.dev ./{test_data}"
+        cmd = f"python -m spacy train {self.train_config_file} --output ./{output_dir} --paths.train ./{train_data} --paths.dev ./{test_data}"
         if self.gpu_availability:
-            command += f" --gpu-id {self.gpu_id}"
-        
-        subprocess.run(command, shell=True)
+            cmd += f" --gpu-id {self.gpu_id}"
+
+        subprocess.run(cmd, check=False, shell=True)
         self.model_path = f"{output_dir}/model-last"
-        self._setup_model([[w for w,_,_ in sent] for sent in test_dataset])
 
+        if test_dataset:
+            tokens_list = [[w for w, _, _ in sent] for sent in test_dataset]
+            self._update_dictionary(tokens_list)
+            self.model = spacy.load(self.model_path)
+            self.model.tokenizer = self._custom_tokenizer
 
-
-    def _setup_train_config(self:"SpacyChunker",base_config,train_config_path):
-        """
-        Create and configure the training configuration file for spaCy.
-
-        Args:
-            - base_config: Path to the base configuration file.
-            - train_config_file_name: Name of the training configuration file for saving it.
-
-        This method is called to generate the training configuration file used in the training process.
-        """
-        print("----------------- Setting up the training configuration file ----------------------")
-        self.train_config_file = train_config_path  # Set the path for the training configuration file
-        command = f"python -m spacy init fill-config {base_config} {train_config_path}"  # Generate the training configuration file
-        subprocess.run(command, shell=True)
-        print("----------------- Training configuration file created successfully ----------------------")
-        print(f"----------------- Training Config file address is {train_config_path} --------------------")
-
-
-    def evaluate(self:"SpacyChunker",test_sents):
-        """
-        Score the accuracy of the chunker against the gold standard.
+    def evaluate(self, test_sents: list[ChunkedSentence]) -> ChunkScore:
+        """Evaluates the accuracy of the chunker.
 
         Args:
-            - test_sents: List of sentences, each represented as a list of (word, tag) tuples.
+            test_sents: A list of chunked sentences for testing.
 
         Returns:
-            - ChunkScore: Object reflecting the performance of this chunk peraser.
+            The chunk score.
         """
-        predictions , golds = self._label_yielder(test_sents)
+        golds = test_sents
+        # Extract sentence tuples for parsing
+        test_inp = [
+            [(word, tag) for word, tag, _ in sent]
+            for sent in golds
+        ]
+
+        parsed = self.parse_sents(test_inp)
+        preds_tree = list(parsed)
+        golds_tree = [conlltags2tree(sent) for sent in golds]
+
         chunkscore = ChunkScore()
-        for pred, correct in zip(predictions, golds):
+        for pred, correct in zip(preds_tree, golds_tree, strict=False):
             chunkscore.score(correct, pred)
 
-        print("Accuracy is:",chunkscore.accuracy())
-        print("Precision is:",chunkscore.precision())
-        print("F_Score is:",chunkscore.f_measure())
-        print("Recall is:",chunkscore.recall())
+        print("Accuracy:", chunkscore.accuracy())
+        print("Precision:", chunkscore.precision())
+        print("Recall:", chunkscore.recall())
+        print("F_Score:", chunkscore.f_measure())
 
         return chunkscore
 
-    def _label_yielder(self: "SpacyChunker",sents):
-        """
-        sents: List(List(Tuple(str,str,str)))
-        Yield gold and predicted trees for evaluation.
-
-        This function prepares gold and predicted trees for evaluation by parsing the test data.
-        
-        Returns:
-        - preds_tree: Predicted trees for evaluation.
-        - golds_tree: Gold standard trees for evaluation.
-        """
-        golds = sents
-        test_inp = [[(prev_tuple[0], prev_tuple[1]) for prev_tuple in inner_list] for inner_list in golds]
-        parsed = self.parse_sents(test_inp)
-        preds_tree = list(parsed)
-        golds_tree = list(self._make_tree_generator(golds))
-        return preds_tree, golds_tree
-    
-    def parse(self: "SpacyChunker", sentence: List[Tuple[str, str]]) -> str:
-        """جمله‌ای را در قالب لیستی از تاپل‌های دوتایی [(توکن, نوع), (توکن, نوع), ...]
-        دریافت می‌کند و درخت تقطع‌شدهٔ آن را بر می‌گرداند.
-
-        Examples:
-            >>> chunker = Chunker(model = 'chunker.model')
-            >>> tree = chunker.parse(sentence = [('نامه', 'NOUN,EZ'), ('ایشان', 'PRON'), ('را', 'ADP'), ('دریافت', 'NOUN'), ('داشتم', 'VERB'), ('.', 'PUNCT')])
-            >>> print(tree)
-            (S
-              (NP نامه/NOUN,EZ ایشان/PRON)
-              (POSTP را/ADP)
-              (VP دریافت/NOUN داشتم/VERB)
-              ./PUNCT)
+    def parse(self, sentence: TaggedSentence) -> Tree:
+        """Parses a single sentence.
 
         Args:
-            sentence: جمله‌ای که باید درخت تقطیع‌شدهٔ آن تولید شود.
+            sentence: A tagged sentence.
 
         Returns:
-            ساختار درختی حاصل از تقطیع.
-            برای تبدیل این ساختار درختی به یک ساختار کروشه‌ای و قابل‌درک‌تر
-            می‌توانید از تابع `tree2brackets()` استفاده کنید.
-
+            The parsed tree.
         """
-        if self.model == None:
-            self._setup_model([[w for w,_ in sentence]])
+        tokens = [w for w, _ in sentence]
+        if self.model is None:
+             msg = "Model not loaded."
+             raise ValueError(msg)
 
-        self._add_to_dict([[w[0] for w in sentence]])
+        self._update_dictionary([tokens])
 
-        doc = self.model(' '.join([w for w , _ in sentence]))
-        words = [w for w , _ in sentence]
-        tags = [tag for _ , tag in sentence]
-        preds = [w.tag_ for w in doc]
-        chunk = list(zip(words,tags,preds))
+        doc = self.model(" ".join(tokens))
+        words = [w for w, _ in sentence]
+        tags = [tag for _, tag in sentence]
+        preds = [w.tag_ for w in doc] # Assuming model predicts chunks in tag_
+
+        chunk = list(zip(words, tags, preds, strict=False))
         return conlltags2tree(chunk)
 
-
-
-    def parse_sents(self: "SpacyChunker", sentences: List[List[Tuple[str, str]]],batch_size=128) -> Iterator[str]:
-        """
-        Parse multiple sentences and extract predictions.
-
-        This function takes a list of sentences and processes each one using the spaCy model,
-        extracting predictions for words, tags, and their associated predicted tags.
+    def parse_sents(
+        self,
+        sentences: list[TaggedSentence],
+        batch_size: int = 128,
+    ) -> Iterator[Tree]:
+        """Parses multiple sentences.
 
         Args:
-        - sentences: List of sentences, each represented as a list of word-tag tuples.
-        - Batch size: number of batchces that model should process
-
-        Returns:
-        - Iterator of predictions for multiple sentences.
-        """
-        if self.model == None:
-            self._setup_model([[w for w , _ in sentence] for sentence in sentences])
-        self._add_to_dict([[w for w,_ in sentence] for sentence in sentences])
-
-        docs = list(self.model.pipe((' '.join([w for w , _ in sent]) for sent in sentences), batch_size=batch_size))
-        words = [[w for w,_, in sentence] for sentence in sentences]
-        tags = [[tag for _, tag in sentence] for sentence in sentences]
-        preds = [[w.tag_ for w in doc] for doc in docs]
-        combined = [list(zip(word_list, tag_list, pred_list)) for word_list, tag_list, pred_list in zip(words, tags, preds)]
-        test_preds = self._make_tree_generator(combined)
-        return test_preds
-
-    def _make_tree_generator(self: "SpacyChunker", sents):
-        """
-        Generate NLTK tree structures from CoNLL tags.
-
-        This function creates NLTK tree structures from CoNLL-formatted chunk tags.
-        It's used to prepare gold and predicted trees for evaluation.
-
-        Args:
-        - sents: List of sentences in CoNLL format (word, tag, chunk).
+            sentences: A list of tagged sentences.
+            batch_size: Batch size for processing.
 
         Yields:
-        - Generator of NLTK tree structures for each sentence.
+            The parsed tree for each sentence.
         """
-        for sent in sents:
-            yield conlltags2tree(sent)
+        tokens_list = [[w for w, _ in sent] for sent in sentences]
+        if self.model is None:
+             msg = "Model not loaded."
+             raise ValueError(msg)
+
+        self._update_dictionary(tokens_list)
+
+        docs = list(
+            self.model.pipe(
+                (" ".join(sent) for sent in tokens_list),
+                batch_size=batch_size,
+            ),
+        )
+
+        for i, doc in enumerate(docs):
+            words = [w for w, _ in sentences[i]]
+            tags = [tag for _, tag in sentences[i]]
+            preds = [w.tag_ for w in doc]
+            chunk = list(zip(words, tags, preds, strict=False))
+            yield conlltags2tree(chunk)

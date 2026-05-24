@@ -1,8 +1,8 @@
-#کلاس‌ها و توابع
+# Classes and Functions
 
-در این بخش، ماژول‌ها، کلاس‌ها و توابعِ هر کلاس به همراه توضیحات و نمونه‌کد آمده است.
+In this section, the modules, classes, and the functions of each class are presented along with explanations and code examples.
 
-**فهرست مطالب این بخش:**
+**Table of Contents:**
 
 - [normalizer](normalizer.md)
 - [informal_normalizer](informal_normalizer.md)
